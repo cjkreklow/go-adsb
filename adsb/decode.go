@@ -38,17 +38,43 @@ import (
  84218421
 */
 
-// decode DF4 altitude reply
-func (m *Message) decode4() error {
+// decode DF4 and DF20 altitude reply
+func (m *Message) decodeAlt() error {
 	m.FltStat = FS(int(m.raw[0]) & 0x07) // bits 6-8
 	m.setICAOFromAP()
 
-	a, err := alt(binary.BigEndian.Uint16(m.raw[2:4]))
+	a, err := alt(binary.BigEndian.Uint16(m.raw[2:4]) & 0x1FFF)
 	if err != nil {
 		return err
 	}
 
 	m.Alt = a
+	if m.Format == DF20 {
+		m.MsgB = m.raw[4:11]
+	}
+
+	return nil
+}
+
+// decode DF5 and DF21 identity reply
+func (m *Message) decodeIdent() error {
+	m.FltStat = FS(int(m.raw[0]) & 0x07) // bits 6-8
+	m.setICAOFromAP()
+
+	i := binary.BigEndian.Uint16(m.raw[2:4]) & 0x1FFF
+
+	oct := make([]uint8, 4)
+
+	oct[0] = uint8(((i & 0x80) >> 5) | ((i & 0x0200) >> 8) | ((i & 0x0800) >> 11))   // A4 A2 A1
+	oct[1] = uint8(((i & 0x02) << 1) | ((i & 0x08) >> 2) | ((i & 0x20) >> 5))        // B4 B2 B1
+	oct[2] = uint8(((i & 0x0100) >> 6) | ((i & 0x0400) >> 9) | ((i & 0x1000) >> 12)) // C4 C2 C1
+	oct[3] = uint8(((i & 0x01) << 2) | ((i & 0x04) >> 1) | ((i & 0x10) >> 4))        // A4 A2 A1
+
+	m.Sqk = fmt.Sprintf("%o%o%o%o", oct[0], oct[1], oct[2], oct[3])
+
+	if m.Format == DF21 {
+		m.MsgB = m.raw[4:11]
+	}
 
 	return nil
 }

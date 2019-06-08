@@ -37,6 +37,8 @@ type Message struct {
 	Cap     CA     // capability
 	FltStat FS     // flight status
 	Alt     int64  // altitude
+	Sqk     string // transponder (squawk) code
+	MsgB    []byte // data link message
 }
 
 // Decode takes a []byte containing a raw 56- or 112-bit ADS-B message
@@ -52,14 +54,21 @@ func (m *Message) Decode(msg []byte) error {
 
 	m.raw = msg
 	m.setParity()
-
 	m.Format = DF(m.raw[0] >> 3) // bits 1-5
+	m.Cap = -1
+	m.FltStat = -1
 
 	switch m.Format {
 	case DF4:
-		err = m.decode4()
+		err = m.decodeAlt()
+	case DF5:
+		err = m.decodeIdent()
 	case DF11:
 		err = m.decode11()
+	case DF20:
+		err = m.decodeAlt()
+	case DF21:
+		err = m.decodeIdent()
 	default:
 		return fmt.Errorf("unsupported format: %v", int(m.Format))
 	}

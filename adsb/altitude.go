@@ -24,8 +24,6 @@ package adsb
 
 import (
 	"errors"
-	"fmt"
-	"strconv"
 )
 
 // alt takes a 13-bit (right-aligned) altitude code field and returns an
@@ -42,7 +40,6 @@ func alt(a uint16) (int64, error) {
 	}
 
 	if a&0x10 == 0 { // Q bit designates 100 ft vs 25 ft increments
-		fmt.Println("--------GILLHAM:", strconv.FormatInt(int64(a), 2))
 		// Gillham encoding, first 8 bits is 500 ft increments
 		g := ((a << 5) & 0x80) | ((a << 6) & 0x40) | // D2(30) D4(32)
 			((a >> 6) & 0x20) | ((a >> 5) & 0x10) | ((a >> 4) & 0x08) | // A1(21) A2(23) A4(25)

@@ -31,18 +31,18 @@ type DF int
 
 // Downlink Format values
 const (
-	DF0  DF = 0
-	DF4  DF = 4
-	DF5  DF = 5
-	DF11 DF = 11
-	DF16 DF = 16
-	DF17 DF = 17
-	DF18 DF = 18
-	DF19 DF = 19
-	DF20 DF = 20
-	DF21 DF = 21
-	DF22 DF = 22
-	DF24 DF = 24
+	DF0  DF = 0  // Short air-air surveillance (ACAS)
+	DF4  DF = 4  // Surveillance altitude reply
+	DF5  DF = 5  // Surveillance identify reply
+	DF11 DF = 11 // All-call reply
+	DF16 DF = 16 // Long air-air surveillance (ACAS)
+	DF17 DF = 17 // Extended squitter
+	DF18 DF = 18 // Extended squitter / non-transponder
+	DF19 DF = 19 // Military extended squitter
+	DF20 DF = 20 // Comm-B altitude reply
+	DF21 DF = 21 // Comm-B identify reply
+	DF22 DF = 22 // Reserved for military use
+	DF24 DF = 24 // Comm-D (ELM)
 )
 
 // String representation of DF
@@ -82,11 +82,11 @@ type CA int
 
 // Capability values
 const (
-	CA0 CA = 0
-	CA4 CA = 4
-	CA5 CA = 5
-	CA6 CA = 6
-	CA7 CA = 7
+	CA0 CA = 0 // Level 1
+	CA4 CA = 4 // Level 2 - On Ground
+	CA5 CA = 5 // Level 2 - Airborne
+	CA6 CA = 6 // Level 2
+	CA7 CA = 7 // CA=7
 )
 
 // String representation of CA
@@ -112,12 +112,12 @@ type FS int
 
 // Flight Status values
 const (
-	FS0 FS = 0
-	FS1 FS = 1
-	FS2 FS = 2
-	FS3 FS = 3
-	FS4 FS = 4
-	FS5 FS = 5
+	FS0 FS = 0 // No Alert, No SPI, Airborne
+	FS1 FS = 1 // No Alert, No SPI, On Ground
+	FS2 FS = 2 // Alert, No SPI, Airborne
+	FS3 FS = 3 // Alert, No SPI, On Ground
+	FS4 FS = 4 // Alert, SPI
+	FS5 FS = 5 // No Alert, SPI
 )
 
 // String representation of FS
