@@ -1,0 +1,31 @@
+language: go
+
+env:
+  global:
+    - GO111MODULE=on
+
+os:
+  - linux
+dist:
+  - xenial
+go:
+  - 1.11.x
+  - 1.12.x
+go_import_path: kreklow.us/go/go-adsb
+script:
+  - go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
+
+jobs:
+  include:
+    - stage: refresh
+      if: |
+        branch = master AND \
+        type = push
+      language: minimal
+      install: skip
+      script:
+        - curl -d "repo=kreklow.us/go/go-adsb" https://goreportcard.com/checks
+        - curl -d "path=kreklow.us/go/go-adsb" https://godoc.org/-/refresh
+      after_success: skip
