@@ -27,6 +27,14 @@ import (
 	"testing"
 )
 
+// TestConst tests string formatting of constant values
+func TestConst(t *testing.T) {
+	t.Run("DF", testDF)
+	t.Run("CA", testCA)
+	t.Run("FS", testFS)
+	t.Run("TC", testTC)
+}
+
 func testDF(t *testing.T) {
 	for val, out := range map[DF]string{
 		DF0:  "DF: Short air-air surveillance (ACAS)",
@@ -77,6 +85,42 @@ func testFS(t *testing.T) {
 		99:  "FS: Unknown value 99",
 	} {
 		var result = fmt.Sprintf("FS: %s", val)
+		if result != out {
+			t.Errorf("%s: expected %s | received %s\n", val, out, result)
+		}
+	}
+}
+
+func testTC(t *testing.T) {
+	for val, out := range map[TC]string{
+		TC0:  "TC: No position information",
+		TC1:  "TC: Identification (Category Set D)",
+		TC2:  "TC: Identification (Category Set C)",
+		TC3:  "TC: Identification (Category Set B)",
+		TC4:  "TC: Identification (Category Set A)",
+		TC5:  "TC: Surface position, 7.5 meter",
+		TC6:  "TC: Surface position, 25 meter",
+		TC7:  "TC: Surface position, 0.1 NM",
+		TC8:  "TC: Surface position",
+		TC9:  "TC: Airborne position, 7.5 meter, barometric altitude",
+		TC10: "TC: Airborne position, 25 meter, barometric altitude",
+		TC11: "TC: Airborne position, 0.1 NM, barometric altitude",
+		TC12: "TC: Airborne position, 0.2 NM, barometric altitude",
+		TC13: "TC: Airborne position, 0.5 NM, barometric altitude",
+		TC14: "TC: Airborne position, 1.0 NM, barometric altitude",
+		TC15: "TC: Airborne position, 2.0 NM, barometric altitude",
+		TC16: "TC: Airborne position, 10 NM, barometric altitude",
+		TC17: "TC: Airborne position, 20 NM, barometric altitude",
+		TC18: "TC: Airborne position, barometric altitude",
+		TC19: "TC: Airborne velocity",
+		TC20: "TC: Airborne position, 7.5 meter, GNSS height",
+		TC21: "TC: Airborne position, 25 meter, GNSS height",
+		TC22: "TC: Airborne position, GNSS height",
+		TC28: "TC: Emergency priority status",
+		TC31: "TC: Operational status",
+		99:   "TC: Unknown value 99",
+	} {
+		var result = fmt.Sprintf("TC: %s", val)
 		if result != out {
 			t.Errorf("%s: expected %s | received %s\n", val, out, result)
 		}

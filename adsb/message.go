@@ -32,19 +32,20 @@ type Message struct {
 	raw    []uint8 // raw message
 	parity uint32  // parity
 
-	ICAO    string // ICAO transponder address
-	Format  DF     // downlink format
-	Cap     CA     // capability
-	FltStat FS     // flight status
-	Alt     int64  // altitude
-	Sqk     string // transponder (squawk) code
-	MsgB    []byte // data link message
+	DF DF // downlink format
+	CA CA // capability
+	FS FS // flight status
+
+	TC TC // extended squitter type
+
+	ICAO string // ICAO transponder address
+	Alt  int64  // altitude
+	Sqk  string // transponder (squawk) code
+	Call string // callsign
 }
 
 // Decode takes a []byte containing a raw 56- or 112-bit ADS-B message
 // and populates the Message struct.
-//
-// Decode currently supports DF4 and DF11 format messages.
 func (m *Message) Decode(msg []byte) error {
 	var err error
 
@@ -54,23 +55,26 @@ func (m *Message) Decode(msg []byte) error {
 
 	m.raw = msg
 	m.setParity()
-	m.Format = DF(m.raw[0] >> 3) // bits 1-5
-	m.Cap = -1
-	m.FltStat = -1
+	m.DF = DF(m.raw[0] >> 3) // bits 1-5
+	m.CA = -1
+	m.FS = -1
+	m.TC = -1
 
-	switch m.Format {
+	switch m.DF {
 	case DF4:
-		err = m.decodeAlt()
+		err = m.decodeAltMsg()
 	case DF5:
-		err = m.decodeIdent()
+		err = m.decodeIdentMsg()
 	case DF11:
 		err = m.decode11()
+	case DF17:
+		err = m.decode17()
 	case DF20:
-		err = m.decodeAlt()
+		err = m.decodeAltMsg()
 	case DF21:
-		err = m.decodeIdent()
+		err = m.decodeIdentMsg()
 	default:
-		return fmt.Errorf("unsupported format: %v", int(m.Format))
+		return fmt.Errorf("unsupported format: %v", int(m.DF))
 	}
 	if err != nil {
 		return err

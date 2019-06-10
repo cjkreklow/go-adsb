@@ -139,3 +139,93 @@ func (c FS) String() string {
 		return fmt.Sprintf("Unknown value %d", c)
 	}
 }
+
+// TC is the extended squitter type
+type TC int
+
+// Extended squitter type values
+const (
+	TC0  TC = 0  // No position information
+	TC1  TC = 1  // Identification (Category Set D)
+	TC2  TC = 2  // Identification (Category Set C)
+	TC3  TC = 3  // Identification (Category Set B)
+	TC4  TC = 4  // Identification (Category Set A)
+	TC5  TC = 5  // Surface position, 7.5 meter
+	TC6  TC = 6  // Surface position, 25 meter
+	TC7  TC = 7  // Surface position, 0.1 NM
+	TC8  TC = 8  // Surface position
+	TC9  TC = 9  // Airborne position, 7.5 meter, barometric altitude
+	TC10 TC = 10 // Airborne position, 25 meter, barometric altitude
+	TC11 TC = 11 // Airborne position, 0.1 NM, barometric altitude
+	TC12 TC = 12 // Airborne position, 0.2 NM, barometric altitude
+	TC13 TC = 13 // Airborne position, 0.5 NM, barometric altitude
+	TC14 TC = 14 // Airborne position, 1.0 NM, barometric altitude
+	TC15 TC = 15 // Airborne position, 2.0 NM, barometric altitude
+	TC16 TC = 16 // Airborne position, 10 NM, barometric altitude
+	TC17 TC = 17 // Airborne position, 20 NM, barometric altitude
+	TC18 TC = 18 // Airborne position, barometric altitude
+	TC19 TC = 19 // Airborne velocity
+	TC20 TC = 20 // Airborne position, 7.5 meter, GNSS height
+	TC21 TC = 21 // Airborne position, 25 meter, GNSS height
+	TC22 TC = 22 // Airborne position, GNSS height
+	TC28 TC = 28 // Emergency priority status
+	TC31 TC = 31 // Operational status
+)
+
+// String representation of TC
+func (c TC) String() string {
+	switch c {
+	case TC0:
+		return "No position information"
+	case TC1:
+		return "Identification (Category Set D)"
+	case TC2:
+		return "Identification (Category Set C)"
+	case TC3:
+		return "Identification (Category Set B)"
+	case TC4:
+		return "Identification (Category Set A)"
+	case TC5:
+		return "Surface position, 7.5 meter"
+	case TC6:
+		return "Surface position, 25 meter"
+	case TC7:
+		return "Surface position, 0.1 NM"
+	case TC8:
+		return "Surface position"
+	case TC9:
+		return "Airborne position, 7.5 meter, barometric altitude"
+	case TC10:
+		return "Airborne position, 25 meter, barometric altitude"
+	case TC11:
+		return "Airborne position, 0.1 NM, barometric altitude"
+	case TC12:
+		return "Airborne position, 0.2 NM, barometric altitude"
+	case TC13:
+		return "Airborne position, 0.5 NM, barometric altitude"
+	case TC14:
+		return "Airborne position, 1.0 NM, barometric altitude"
+	case TC15:
+		return "Airborne position, 2.0 NM, barometric altitude"
+	case TC16:
+		return "Airborne position, 10 NM, barometric altitude"
+	case TC17:
+		return "Airborne position, 20 NM, barometric altitude"
+	case TC18:
+		return "Airborne position, barometric altitude"
+	case TC19:
+		return "Airborne velocity"
+	case TC20:
+		return "Airborne position, 7.5 meter, GNSS height"
+	case TC21:
+		return "Airborne position, 25 meter, GNSS height"
+	case TC22:
+		return "Airborne position, GNSS height"
+	case TC28:
+		return "Emergency priority status"
+	case TC31:
+		return "Operational status"
+	default:
+		return fmt.Sprintf("Unknown value %d", c)
+	}
+}

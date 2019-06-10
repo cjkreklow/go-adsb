@@ -21,6 +21,6 @@
 // SOFTWARE.
 
 // Package adsb provides objects and methods for decoding and
-// managing raw ADS-B and Mode-S Beast messages.
+// managing raw ADS-B messages.
 //
 package adsb

@@ -23,8 +23,10 @@
 package adsb
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"fmt"
 )
 
@@ -38,27 +40,39 @@ import (
  84218421
 */
 
+// decode DF11 all call reply
+func (m *Message) decode11() error {
+	m.CA = CA(int(m.raw[0]) & 0x07) // bits 6-8
+	m.ICAO = hex.EncodeToString(m.raw[1:4])
+
+	return nil
+}
+
 // decode DF4 and DF20 altitude reply
-func (m *Message) decodeAlt() error {
-	m.FltStat = FS(int(m.raw[0]) & 0x07) // bits 6-8
+func (m *Message) decodeAltMsg() error {
+	m.FS = FS(int(m.raw[0]) & 0x07) // bits 6-8
 	m.setICAOFromAP()
 
-	a, err := alt(binary.BigEndian.Uint16(m.raw[2:4]) & 0x1FFF)
+	a, err := decodeAlt13(binary.BigEndian.Uint16(m.raw[2:4]) & 0x1FFF)
 	if err != nil {
 		return err
 	}
 
 	m.Alt = a
-	if m.Format == DF20 {
-		m.MsgB = m.raw[4:11]
+
+	if m.DF == DF20 {
+		err := m.decodeCommB()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
 // decode DF5 and DF21 identity reply
-func (m *Message) decodeIdent() error {
-	m.FltStat = FS(int(m.raw[0]) & 0x07) // bits 6-8
+func (m *Message) decodeIdentMsg() error {
+	m.FS = FS(int(m.raw[0]) & 0x07) // bits 6-8
 	m.setICAOFromAP()
 
 	i := binary.BigEndian.Uint16(m.raw[2:4]) & 0x1FFF
@@ -72,17 +86,39 @@ func (m *Message) decodeIdent() error {
 
 	m.Sqk = fmt.Sprintf("%o%o%o%o", oct[0], oct[1], oct[2], oct[3])
 
-	if m.Format == DF21 {
-		m.MsgB = m.raw[4:11]
+	if m.DF == DF21 {
+		err := m.decodeCommB()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-// decode DF11 all-call reply
-func (m *Message) decode11() error {
-	m.Cap = CA(int(m.raw[0]) & 0x07) // bits 6-8
+// decode DF17 extended squitter message
+func (m *Message) decode17() error {
+	m.CA = CA(int(m.raw[0]) & 0x07) // bits 6-8
 	m.ICAO = hex.EncodeToString(m.raw[1:4])
+
+	m.TC = TC(m.raw[4] >> 3)
+
+	if m.TC >= 1 && m.TC <= 4 {
+		err := m.setCall(m.raw[5:11])
+		if err != nil {
+			return err
+		}
+	}
+
+	if m.TC >= 9 && m.TC <= 18 {
+		a, err := decodeAlt12(binary.BigEndian.Uint16(m.raw[5:7]) >> 4)
+		if err != nil {
+			return err
+		}
+
+		m.Alt = a
+	}
+
 	return nil
 }
 
@@ -90,4 +126,26 @@ func (m *Message) decode11() error {
 func (m *Message) setICAOFromAP() {
 	b := binary.BigEndian.Uint32(m.raw[len(m.raw)-4:len(m.raw)]) & 0x00FFFFFF
 	m.ICAO = fmt.Sprintf("%06x", b^m.parity)
+}
+
+// utility function to set Call from a data field
+func (m *Message) setCall(b []byte) error {
+	if len(b) != 6 {
+		return errors.New("incorrect data length")
+	}
+
+	c := []byte("?ABCDEFGHIJKLMNOPQRSTUVWXYZ????? ???????????????0123456789??????")
+
+	a := binary.BigEndian.Uint64(append([]byte{0x00, 0x00}, b...))
+
+	call := make([]byte, 8)
+
+	var i uint
+	for i = 0; i < 8; i++ {
+		call[i] = c[(a>>(42-(i*6)))&0x3F]
+	}
+
+	m.Call = string(bytes.TrimRight(call, " "))
+
+	return nil
 }

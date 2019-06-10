@@ -22,33 +22,14 @@
 
 package adsb
 
-import (
-	"encoding/hex"
-	"testing"
-)
+// decodeCommB attempts to decode the message field of a Comm-B message.
+func (m *Message) decodeCommB() error {
+	if m.raw[4] == 0x20 {
+		err := m.setCall(m.raw[5:11])
+		if err != nil {
+			return err
+		}
+	}
 
-// TestShort tests an incorrect length message
-func TestShort(t *testing.T) {
-	raw, err := hex.DecodeString("ff00")
-	if err != nil {
-		t.Error("received unexpected error", err)
-	}
-	msg := new(Message)
-	err = msg.Decode(raw)
-	if err.Error() != "invalid message length" {
-		t.Error("received unexpected error", err)
-	}
-}
-
-// TestUnknown tests an unknown message format
-func TestUnknown(t *testing.T) {
-	raw, err := hex.DecodeString("ff0000000000ff")
-	if err != nil {
-		t.Error("received unexpected error", err)
-	}
-	msg := new(Message)
-	err = msg.Decode(raw)
-	if err.Error() != "unsupported format: 31" {
-		t.Error("received unexpected error", err)
-	}
+	return nil
 }
