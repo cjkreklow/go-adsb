@@ -46,6 +46,7 @@ func TestDecode(t *testing.T) {
 	t.Run("DF5", testDF5)
 	t.Run("DF11", testDF11)
 	t.Run("DF17 Altitude", testDF17Alt)
+	t.Run("DF17 Identity", testDF17Ident)
 	t.Run("DF20", testDF20)
 	t.Run("DF21", testDF21)
 }
@@ -164,6 +165,23 @@ func testDF17Alt(t *testing.T) {
 		Alt:  36950,
 		Sqk:  "",
 		Call: "",
+	}
+
+	testDecode(t, tc)
+}
+
+// test DF17 extended squitter identity
+func testDF17Ident(t *testing.T) {
+	tc := &testCase{
+		Msg:  "8dacf84e23101332cf3ca037ef13",
+		DF:   17,
+		CA:   5,
+		FS:   -1,
+		TC:   4,
+		ICAO: "acf84e",
+		Alt:  0,
+		Sqk:  "",
+		Call: "DAL2332",
 	}
 
 	testDecode(t, tc)
