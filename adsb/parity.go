@@ -56,21 +56,19 @@ func (m *Message) setParity() {
 		0x000000, 0x000000, 0x000000, 0x000000,
 	}
 
-	var f uint
+	var l int
+	var o int
 	if len(m.raw) == 7 {
-		f = 112 - 56
+		l = 56 - 24
+		o = 112 - 56
+	} else {
+		l = 112 - 24
+		o = 0
 	}
 
-	var p uint32
-
-	for i, b := range m.raw {
-		for j := uint(0); j < 8; j++ {
-			m := uint8(1) << (7 - j)
-			if (b & m) != 0 {
-				p ^= pt[(uint(i)*8)+j+f]
-			}
+	for i := 1; i <= l; i++ {
+		if m.raw.Bit(i) != 0 {
+			m.parity ^= pt[i+o-1]
 		}
 	}
-
-	m.parity = p
 }

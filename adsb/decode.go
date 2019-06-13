@@ -24,36 +24,64 @@ package adsb
 
 import (
 	"bytes"
-	"encoding/binary"
-	"encoding/hex"
 	"errors"
 	"fmt"
+	"strconv"
 )
 
-/*
-56 bits
-           1          2          3          4           5
- 12345678 90123456 78901234 56789012 34567890 12345678 90123456
-0        1        2        3        4        5        6        7
+// Decode takes a []byte containing a raw 56- or 112-bit ADS-B message
+// and populates the Message struct.
+func (m *Message) Decode(msg []byte) error {
+	var err error
 
- 12345678
- 84218421
-*/
+	if len(msg) != 7 && len(msg) != 14 {
+		return errors.New("invalid message length")
+	}
+
+	m.raw = msg
+	m.setParity()
+	m.DF = DF(m.raw.Bits8(1, 5))
+	m.CA = -1
+	m.FS = -1
+	m.TC = -1
+
+	switch m.DF {
+	case DF4:
+		err = m.decodeAltMsg()
+	case DF5:
+		err = m.decodeIdentMsg()
+	case DF11:
+		err = m.decode11()
+	case DF17:
+		err = m.decode17()
+	case DF20:
+		err = m.decodeAltMsg()
+	case DF21:
+		err = m.decodeIdentMsg()
+	default:
+		err = fmt.Errorf("unsupported format: %v", int(m.DF))
+	}
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // decode DF11 all call reply
 func (m *Message) decode11() error {
-	m.CA = CA(int(m.raw[0]) & 0x07) // bits 6-8
-	m.ICAO = hex.EncodeToString(m.raw[1:4])
+	m.CA = CA(m.raw.Bits8(6, 8))
+	m.ICAO = strconv.FormatUint(m.raw.Bits64(9, 32), 16)
 
 	return nil
 }
 
 // decode DF4 and DF20 altitude reply
 func (m *Message) decodeAltMsg() error {
-	m.FS = FS(int(m.raw[0]) & 0x07) // bits 6-8
+	m.FS = FS(m.raw.Bits8(6, 8))
 	m.setICAOFromAP()
 
-	a, err := decodeAlt13(binary.BigEndian.Uint16(m.raw[2:4]) & 0x1FFF)
+	a, err := decodeAlt13(m.raw.Bits16(20, 32))
 	if err != nil {
 		return err
 	}
@@ -72,19 +100,26 @@ func (m *Message) decodeAltMsg() error {
 
 // decode DF5 and DF21 identity reply
 func (m *Message) decodeIdentMsg() error {
-	m.FS = FS(int(m.raw[0]) & 0x07) // bits 6-8
+	m.FS = FS(m.raw.Bits8(6, 8))
 	m.setICAOFromAP()
 
-	i := binary.BigEndian.Uint16(m.raw[2:4]) & 0x1FFF
+	f := [][]int{
+		[]int{25, 23, 21},
+		[]int{31, 29, 27},
+		[]int{24, 22, 20},
+		[]int{32, 30, 28},
+	}
 
-	oct := make([]uint8, 4)
+	var id uint64
 
-	oct[0] = uint8(((i & 0x80) >> 5) | ((i & 0x0200) >> 8) | ((i & 0x0800) >> 11))   // A4 A2 A1
-	oct[1] = uint8(((i & 0x02) << 1) | ((i & 0x08) >> 2) | ((i & 0x20) >> 5))        // B4 B2 B1
-	oct[2] = uint8(((i & 0x0100) >> 6) | ((i & 0x0400) >> 9) | ((i & 0x1000) >> 12)) // C4 C2 C1
-	oct[3] = uint8(((i & 0x01) << 2) | ((i & 0x04) >> 1) | ((i & 0x10) >> 4))        // A4 A2 A1
+	for _, v := range f {
+		for _, x := range v {
+			id <<= 1
+			id |= uint64(m.raw.Bit(x))
+		}
+	}
 
-	m.Sqk = fmt.Sprintf("%o%o%o%o", oct[0], oct[1], oct[2], oct[3])
+	m.Sqk = strconv.FormatUint(id, 8)
 
 	if m.DF == DF21 {
 		err := m.decodeCommB()
@@ -98,20 +133,20 @@ func (m *Message) decodeIdentMsg() error {
 
 // decode DF17 extended squitter message
 func (m *Message) decode17() error {
-	m.CA = CA(int(m.raw[0]) & 0x07) // bits 6-8
-	m.ICAO = hex.EncodeToString(m.raw[1:4])
+	m.CA = CA(m.raw.Bits8(6, 8))
+	m.ICAO = strconv.FormatUint(m.raw.Bits64(9, 32), 16)
 
-	m.TC = TC(m.raw[4] >> 3)
+	m.TC = TC(m.raw.Bits8(33, 37))
 
 	if m.TC >= 1 && m.TC <= 4 {
-		err := m.setCall(m.raw[5:11])
+		err := m.setCall(m.raw.Bits64(41, 88))
 		if err != nil {
 			return err
 		}
 	}
 
 	if m.TC >= 9 && m.TC <= 18 {
-		a, err := decodeAlt12(binary.BigEndian.Uint16(m.raw[5:7]) >> 4)
+		a, err := decodeAlt12(m.raw.Bits16(41, 52))
 		if err != nil {
 			return err
 		}
@@ -124,25 +159,19 @@ func (m *Message) decode17() error {
 
 // utility function to set ICAO when XORed into an AP field
 func (m *Message) setICAOFromAP() {
-	b := binary.BigEndian.Uint32(m.raw[len(m.raw)-4:len(m.raw)]) & 0x00FFFFFF
+	b := m.raw.Bits32((len(m.raw)*8)-24, len(m.raw)*8)
 	m.ICAO = fmt.Sprintf("%06x", b^m.parity)
 }
 
 // utility function to set Call from a data field
-func (m *Message) setCall(b []byte) error {
-	if len(b) != 6 {
-		return errors.New("incorrect data length")
-	}
-
+func (m *Message) setCall(b uint64) error {
 	c := []byte("?ABCDEFGHIJKLMNOPQRSTUVWXYZ????? ???????????????0123456789??????")
-
-	a := binary.BigEndian.Uint64(append([]byte{0x00, 0x00}, b...))
 
 	call := make([]byte, 8)
 
 	var i uint
 	for i = 0; i < 8; i++ {
-		call[i] = c[(a>>(42-(i*6)))&0x3F]
+		call[i] = c[(b>>(42-(i*6)))&0x3F]
 	}
 
 	m.Call = string(bytes.TrimRight(call, " "))

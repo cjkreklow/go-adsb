@@ -24,8 +24,8 @@ package adsb
 
 // decodeCommB attempts to decode the message field of a Comm-B message.
 func (m *Message) decodeCommB() error {
-	if m.raw[4] == 0x20 {
-		err := m.setCall(m.raw[5:11])
+	if m.raw.Bits8(33, 40) == 0x20 {
+		err := m.setCall(m.raw.Bits64(41, 88))
 		if err != nil {
 			return err
 		}

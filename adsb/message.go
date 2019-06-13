@@ -22,15 +22,10 @@
 
 package adsb
 
-import (
-	"errors"
-	"fmt"
-)
-
 // Message is an ADS-B message
 type Message struct {
-	raw    []uint8 // raw message
-	parity uint32  // parity
+	raw    RawBytes // raw message
+	parity uint32   // parity
 
 	DF DF // downlink format
 	CA CA // capability
@@ -42,43 +37,4 @@ type Message struct {
 	Alt  int64  // altitude
 	Sqk  string // transponder (squawk) code
 	Call string // callsign
-}
-
-// Decode takes a []byte containing a raw 56- or 112-bit ADS-B message
-// and populates the Message struct.
-func (m *Message) Decode(msg []byte) error {
-	var err error
-
-	if len(msg) != 7 && len(msg) != 14 {
-		return errors.New("invalid message length")
-	}
-
-	m.raw = msg
-	m.setParity()
-	m.DF = DF(m.raw[0] >> 3) // bits 1-5
-	m.CA = -1
-	m.FS = -1
-	m.TC = -1
-
-	switch m.DF {
-	case DF4:
-		err = m.decodeAltMsg()
-	case DF5:
-		err = m.decodeIdentMsg()
-	case DF11:
-		err = m.decode11()
-	case DF17:
-		err = m.decode17()
-	case DF20:
-		err = m.decodeAltMsg()
-	case DF21:
-		err = m.decodeIdentMsg()
-	default:
-		return fmt.Errorf("unsupported format: %v", int(m.DF))
-	}
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
