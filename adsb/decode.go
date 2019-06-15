@@ -101,10 +101,10 @@ func (m *Message) decodeIdentMsg() error {
 	m.setICAOFromAP()
 
 	f := [][]int{
-		[]int{25, 23, 21},
-		[]int{31, 29, 27},
-		[]int{24, 22, 20},
-		[]int{32, 30, 28},
+		{25, 23, 21},
+		{31, 29, 27},
+		{24, 22, 20},
+		{32, 30, 28},
 	}
 
 	var id uint64

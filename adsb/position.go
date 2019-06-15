@@ -171,8 +171,7 @@ func DecodeGlobalPosition(c1 *CPR, c2 *CPR) ([]float64, error) {
 }
 
 // mod implements the MOD function as defined in the ADS-B
-// specifications, specifically adding 360 degrees to a negative value
-// prior to caclulating the remainder.
+// specifications.
 func mod(a float64, b float64) float64 {
 	return a - (b * math.Floor(a/b))
 }
