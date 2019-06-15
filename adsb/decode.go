@@ -44,20 +44,17 @@ func (m *Message) Decode(msg []byte) error {
 	m.CA = -1
 	m.FS = -1
 	m.TC = -1
+	m.SS = -1
 
 	switch m.DF {
-	case DF4:
+	case DF4, DF20:
 		err = m.decodeAltMsg()
-	case DF5:
+	case DF5, DF21:
 		err = m.decodeIdentMsg()
 	case DF11:
 		err = m.decode11()
 	case DF17:
 		err = m.decode17()
-	case DF20:
-		err = m.decodeAltMsg()
-	case DF21:
-		err = m.decodeIdentMsg()
 	default:
 		err = fmt.Errorf("unsupported format: %v", int(m.DF))
 	}
@@ -139,19 +136,26 @@ func (m *Message) decode17() error {
 	m.TC = TC(m.raw.Bits8(33, 37))
 
 	if m.TC >= 1 && m.TC <= 4 {
-		err := m.setCall(m.raw.Bits64(41, 88))
-		if err != nil {
-			return err
-		}
+		m.Cat = m.raw.Bits8(38, 40)
+		m.setCall(m.raw.Bits64(41, 88))
 	}
 
 	if m.TC >= 9 && m.TC <= 18 {
+		m.SS = SS(m.raw.Bits8(38, 39))
+
 		a, err := decodeAlt12(m.raw.Bits16(41, 52))
 		if err != nil {
 			return err
 		}
 
 		m.Alt = a
+
+		m.CPR = new(CPR)
+		m.CPR.Nb = 17
+		m.CPR.T = m.raw.Bit(53)
+		m.CPR.F = m.raw.Bit(54)
+		m.CPR.Lat = m.raw.Bits32(55, 71)
+		m.CPR.Lon = m.raw.Bits32(72, 88)
 	}
 
 	return nil
@@ -164,7 +168,7 @@ func (m *Message) setICAOFromAP() {
 }
 
 // utility function to set Call from a data field
-func (m *Message) setCall(b uint64) error {
+func (m *Message) setCall(b uint64) {
 	c := []byte("?ABCDEFGHIJKLMNOPQRSTUVWXYZ????? ???????????????0123456789??????")
 
 	call := make([]byte, 8)
@@ -175,6 +179,4 @@ func (m *Message) setCall(b uint64) error {
 	}
 
 	m.Call = string(bytes.TrimRight(call, " "))
-
-	return nil
 }

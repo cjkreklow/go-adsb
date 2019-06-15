@@ -31,7 +31,10 @@ type Message struct {
 	CA CA // capability
 	FS FS // flight status
 
-	TC TC // extended squitter type
+	TC  TC    // extended squitter type
+	SS  SS    // extended squitter surveillance status
+	Cat uint8 // extended squitter emitter category
+	CPR *CPR  // extended squitter compact position report
 
 	ICAO string // ICAO transponder address
 	Alt  int64  // altitude

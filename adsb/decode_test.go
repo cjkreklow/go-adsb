@@ -24,15 +24,30 @@ package adsb
 
 import (
 	"encoding/hex"
+	"math/big"
 	"testing"
 )
 
 type testCase struct {
-	Msg  string
-	DF   int
-	CA   int
-	FS   int
-	TC   int
+	Msg string
+
+	DF int
+	CA int
+	FS int
+
+	TC  int
+	SS  int
+	Cat uint8
+
+	CPR       bool
+	LocalPos  bool
+	RefPt     []float64
+	GlobalPos bool
+	Msg2      string
+
+	Lat float64
+	Lon float64
+
 	ICAO string
 	Alt  int64
 	Sqk  string
@@ -45,7 +60,8 @@ func TestDecode(t *testing.T) {
 	t.Run("DF4 Gillham", testDF4B)
 	t.Run("DF5", testDF5)
 	t.Run("DF11", testDF11)
-	t.Run("DF17 Altitude", testDF17Alt)
+	t.Run("DF17 Position - Local", testDF17PosLocal)
+	t.Run("DF17 Position - Global", testDF17PosGlobal)
 	t.Run("DF17 Identity", testDF17Ident)
 	t.Run("DF20", testDF20)
 	t.Run("DF21", testDF21)
@@ -54,11 +70,18 @@ func TestDecode(t *testing.T) {
 // test DF4 with 25ft altitude report
 func testDF4A(t *testing.T) {
 	tc := &testCase{
-		Msg:  "20001910bc45e9",
-		DF:   4,
-		CA:   -1,
-		FS:   0,
-		TC:   -1,
+		Msg: "20001910bc45e9",
+
+		DF: 4,
+		CA: -1,
+		FS: 0,
+
+		TC:  -1,
+		SS:  -1,
+		Cat: 0,
+
+		CPR: false,
+
 		ICAO: "a27aee",
 		Alt:  39000,
 		Sqk:  "",
@@ -71,11 +94,18 @@ func testDF4A(t *testing.T) {
 // test DF4 with a Gillham-encoded altitude
 func testDF4B(t *testing.T) {
 	tc := &testCase{
-		Msg:  "2000042210fc86",
-		DF:   4,
-		CA:   -1,
-		FS:   0,
-		TC:   -1,
+		Msg: "2000042210fc86",
+
+		DF: 4,
+		CA: -1,
+		FS: 0,
+
+		TC:  -1,
+		SS:  -1,
+		Cat: 0,
+
+		CPR: false,
+
 		ICAO: "a97172",
 		Alt:  2000,
 		Sqk:  "",
@@ -88,11 +118,18 @@ func testDF4B(t *testing.T) {
 // test DF5 identity reply
 func testDF5(t *testing.T) {
 	tc := &testCase{
-		Msg:  "28001b0601970d",
-		DF:   5,
-		CA:   -1,
-		FS:   0,
-		TC:   -1,
+		Msg: "28001b0601970d",
+
+		DF: 5,
+		CA: -1,
+		FS: 0,
+
+		TC:  -1,
+		SS:  -1,
+		Cat: 0,
+
+		CPR: false,
+
 		ICAO: "a3696e",
 		Alt:  0,
 		Sqk:  "3452",
@@ -105,11 +142,18 @@ func testDF5(t *testing.T) {
 // test DF11 all call reply
 func testDF11(t *testing.T) {
 	tc := &testCase{
-		Msg:  "5dac22c54b7a07",
-		DF:   11,
-		CA:   5,
-		FS:   -1,
-		TC:   -1,
+		Msg: "5dac22c54b7a07",
+
+		DF: 11,
+		CA: 5,
+		FS: -1,
+
+		TC:  -1,
+		SS:  -1,
+		Cat: 0,
+
+		CPR: false,
+
 		ICAO: "ac22c5",
 		Alt:  0,
 		Sqk:  "",
@@ -122,11 +166,18 @@ func testDF11(t *testing.T) {
 // test DF20 Comm-B altitude reply
 func testDF20(t *testing.T) {
 	tc := &testCase{
-		Msg:  "a0000f9820057273df8d20e2cf30",
-		DF:   20,
-		CA:   -1,
-		FS:   0,
-		TC:   -1,
+		Msg: "a0000f9820057273df8d20e2cf30",
+
+		DF: 20,
+		CA: -1,
+		FS: 0,
+
+		TC:  -1,
+		SS:  -1,
+		Cat: 0,
+
+		CPR: false,
+
 		ICAO: "a52333",
 		Alt:  24000,
 		Sqk:  "",
@@ -139,11 +190,18 @@ func testDF20(t *testing.T) {
 // test DF21 Comm-B identity reply
 func testDF21(t *testing.T) {
 	tc := &testCase{
-		Msg:  "ac19b29573482f6963663636022b",
-		DF:   21,
-		CA:   -1,
-		FS:   4,
-		TC:   -1,
+		Msg: "ac19b29573482f6963663636022b",
+
+		DF: 21,
+		CA: -1,
+		FS: 4,
+
+		TC:  -1,
+		SS:  -1,
+		Cat: 0,
+
+		CPR: false,
+
 		ICAO: "a97db4",
 		Alt:  0,
 		Sqk:  "6017",
@@ -153,16 +211,57 @@ func testDF21(t *testing.T) {
 	testDecode(t, tc)
 }
 
-// test DF17 extended squitter altitude
-func testDF17Alt(t *testing.T) {
+// test DF17 extended squitter position, local decode
+func testDF17PosLocal(t *testing.T) {
 	tc := &testCase{
-		Msg:  "8da9450d60bde138e8638c939134",
-		DF:   17,
-		CA:   5,
-		FS:   -1,
-		TC:   12,
+		Msg: "8da9450d60bde138e8638c939134",
+
+		DF: 17,
+		CA: 5,
+		FS: -1,
+
+		TC:  12,
+		SS:  0,
+		Cat: 0,
+
+		CPR:      true,
+		LocalPos: true,
+		RefPt:    []float64{43.14, -89.33},
+
+		Lat: 43.83300781,
+		Lon: -90.46484375,
+
 		ICAO: "a9450d",
 		Alt:  36950,
+		Sqk:  "",
+		Call: "",
+	}
+
+	testDecode(t, tc)
+}
+
+// test DF17 extended squitter position, global decode
+func testDF17PosGlobal(t *testing.T) {
+	tc := &testCase{
+		Msg: "8da097f4585db7aad29ce113c4aa",
+
+		DF: 17,
+		CA: 5,
+		FS: -1,
+
+		TC:  11,
+		SS:  0,
+		Cat: 0,
+
+		CPR:       true,
+		GlobalPos: true,
+		Msg2:      "8da097f4585dc022e41d7a938feb",
+
+		Lat: 42.20443725,
+		Lon: -89.52891181,
+
+		ICAO: "a097f4",
+		Alt:  17675,
 		Sqk:  "",
 		Call: "",
 	}
@@ -173,11 +272,18 @@ func testDF17Alt(t *testing.T) {
 // test DF17 extended squitter identity
 func testDF17Ident(t *testing.T) {
 	tc := &testCase{
-		Msg:  "8dacf84e23101332cf3ca037ef13",
-		DF:   17,
-		CA:   5,
-		FS:   -1,
-		TC:   4,
+		Msg: "8dacf84e23101332cf3ca037ef13",
+
+		DF: 17,
+		CA: 5,
+		FS: -1,
+
+		TC:  4,
+		SS:  -1,
+		Cat: 3,
+
+		CPR: false,
+
 		ICAO: "acf84e",
 		Alt:  0,
 		Sqk:  "",
@@ -211,6 +317,12 @@ func testDecode(t *testing.T, tc *testCase) {
 	if msg.TC != TC(tc.TC) {
 		t.Errorf("TC: received %v, expected %v", int(msg.TC), tc.TC)
 	}
+	if msg.SS != SS(tc.SS) {
+		t.Errorf("SS: received %v, expected %v", int(msg.SS), tc.SS)
+	}
+	if msg.Cat != tc.Cat {
+		t.Errorf("Cat: received %v, expected %v", msg.Cat, tc.Cat)
+	}
 	if msg.ICAO != tc.ICAO {
 		t.Errorf("ICAO: received %s, expected %s", msg.ICAO, tc.ICAO)
 	}
@@ -222,5 +334,73 @@ func testDecode(t *testing.T, tc *testCase) {
 	}
 	if msg.Call != tc.Call {
 		t.Errorf("Call: received %s, expected %s", msg.Call, tc.Call)
+	}
+
+	if !tc.CPR && msg.CPR != nil {
+		t.Error("CPR: unexpected position report populated")
+	}
+
+	if tc.CPR && tc.LocalPos {
+		if msg.CPR == nil {
+			t.Error("CPR: expected but not present")
+		} else {
+			c, err := msg.CPR.DecodeLocal(tc.RefPt)
+			if err != nil {
+				t.Error("CPR: local decode error:", err)
+			} else {
+				eLat := big.NewFloat(tc.Lat)
+				eLat.SetPrec(16)
+				cLat := big.NewFloat(c[0])
+				cLat.SetPrec(16)
+				if eLat.Cmp(cLat) != 0 {
+					t.Errorf("Lat: received %s, expected %s", cLat.String(), eLat.String())
+				}
+				eLon := big.NewFloat(tc.Lon)
+				eLon.SetPrec(16)
+				cLon := big.NewFloat(c[1])
+				cLon.SetPrec(16)
+				if eLon.Cmp(cLon) != 0 {
+					t.Errorf("Lon: received %s, expected %s", cLon.String(), eLon.String())
+				}
+			}
+		}
+	}
+
+	if tc.CPR && tc.GlobalPos {
+		if msg.CPR == nil {
+			t.Error("CPR: expected but not present")
+		} else {
+			m2 := new(Message)
+			m2b, err := (hex.DecodeString(tc.Msg2))
+			if err != nil {
+				t.Fatal("received unexpected error", err)
+			}
+			err = m2.Decode(m2b)
+			if err != nil {
+				t.Fatal("received unexpected error", err)
+			}
+			if m2.CPR == nil {
+				t.Fatal("no position decoded in Msg2")
+			}
+			c, err := DecodeGlobalPosition(msg.CPR, m2.CPR)
+			if err != nil {
+				t.Error("CPR: global decode error:", err)
+			} else {
+				eLat := big.NewFloat(tc.Lat)
+				eLat.SetPrec(16)
+				cLat := big.NewFloat(c[0])
+				cLat.SetPrec(16)
+				if eLat.Cmp(cLat) != 0 {
+					t.Errorf("Lat: received %s, expected %s", cLat.String(), eLat.String())
+				}
+				eLon := big.NewFloat(tc.Lon)
+				eLon.SetPrec(16)
+				cLon := big.NewFloat(c[1])
+				cLon.SetPrec(16)
+				if eLon.Cmp(cLon) != 0 {
+					t.Errorf("Lon: received %s, expected %s", cLon.String(), eLon.String())
+				}
+			}
+		}
 	}
 }

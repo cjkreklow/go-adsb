@@ -229,3 +229,30 @@ func (c TC) String() string {
 		return fmt.Sprintf("Unknown value %d", c)
 	}
 }
+
+// SS is the extended squitter surveillance status
+type SS int
+
+// Surveillance Status values
+const (
+	SS0 SS = 0 // No condition information
+	SS1 SS = 1 // Permanent alert (emergency)
+	SS2 SS = 2 // Temporary alert (ident change)
+	SS3 SS = 3 // SPI
+)
+
+// String representation of SS
+func (c SS) String() string {
+	switch c {
+	case SS0:
+		return "No condition information"
+	case SS1:
+		return "Permanent alert (emergency)"
+	case SS2:
+		return "Temporary alert (ident change)"
+	case SS3:
+		return "SPI"
+	default:
+		return fmt.Sprintf("Unknown value %d", c)
+	}
+}

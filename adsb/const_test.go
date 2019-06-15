@@ -33,6 +33,7 @@ func TestConst(t *testing.T) {
 	t.Run("CA", testCA)
 	t.Run("FS", testFS)
 	t.Run("TC", testTC)
+	t.Run("SS", testSS)
 }
 
 func testDF(t *testing.T) {
@@ -121,6 +122,21 @@ func testTC(t *testing.T) {
 		99:   "TC: Unknown value 99",
 	} {
 		var result = fmt.Sprintf("TC: %s", val)
+		if result != out {
+			t.Errorf("%s: expected %s | received %s\n", val, out, result)
+		}
+	}
+}
+
+func testSS(t *testing.T) {
+	for val, out := range map[SS]string{
+		SS0: "SS: No condition information",
+		SS1: "SS: Permanent alert (emergency)",
+		SS2: "SS: Temporary alert (ident change)",
+		SS3: "SS: SPI",
+		99:  "SS: Unknown value 99",
+	} {
+		var result = fmt.Sprintf("SS: %s", val)
 		if result != out {
 			t.Errorf("%s: expected %s | received %s\n", val, out, result)
 		}
