@@ -60,8 +60,9 @@ func TestDecode(t *testing.T) {
 	t.Run("DF4 Gillham", testDF4B)
 	t.Run("DF5", testDF5)
 	t.Run("DF11", testDF11)
-	t.Run("DF17 Position - Local", testDF17PosLocal)
-	t.Run("DF17 Position - Global", testDF17PosGlobal)
+	t.Run("DF17 Position Local", testDF17PosLocal)
+	t.Run("DF17 Position Global", testDF17PosGlobal)
+	t.Run("DF17 Position Global Reverse", testDF17PosGlobalRev)
 	t.Run("DF17 Identity", testDF17Ident)
 	t.Run("DF20", testDF20)
 	t.Run("DF21", testDF21)
@@ -243,7 +244,7 @@ func testDF17PosLocal(t *testing.T) {
 // test DF17 extended squitter position, global decode
 func testDF17PosGlobal(t *testing.T) {
 	tc := &testCase{
-		Msg: "8da097f4585db7aad29ce113c4aa",
+		Msg: "8da8028758ab0028de078689d437",
 
 		DF: 17,
 		CA: 5,
@@ -255,13 +256,42 @@ func testDF17PosGlobal(t *testing.T) {
 
 		CPR:       true,
 		GlobalPos: true,
-		Msg2:      "8da097f4585dc022e41d7a938feb",
+		Msg2:      "8da8028758ab07b0b8876e81eb25",
 
-		Lat: 42.20443725,
-		Lon: -89.52891181,
+		Lat: 42.23945229,
+		Lon: -89.87851165,
 
-		ICAO: "a097f4",
-		Alt:  17675,
+		ICAO: "a80287",
+		Alt:  33000,
+		Sqk:  "",
+		Call: "",
+	}
+
+	testDecode(t, tc)
+}
+
+// test DF17 extended squitter position, global decode, reversed
+func testDF17PosGlobalRev(t *testing.T) {
+	tc := &testCase{
+		Msg: "8dab9448589ff40a4e62a6c8b7a6",
+
+		DF: 17,
+		CA: 5,
+		FS: -1,
+
+		TC:  11,
+		SS:  0,
+		Cat: 0,
+
+		CPR:       true,
+		GlobalPos: true,
+		Msg2:      "8dab9448589ff083bbe2387219c5",
+
+		Lat: 42.77183532,
+		Lon: -90.47590775,
+
+		ICAO: "ab9448",
+		Alt:  30975,
 		Sqk:  "",
 		Call: "",
 	}
