@@ -160,6 +160,10 @@ func TestDecodeShort3(t *testing.T) {
 	testDecoderError(t, "1a331a", "EOF")
 }
 
+func TestDecodeShortUnescape(t *testing.T) {
+	testDecoderError(t, "1a331a1a", "EOF")
+}
+
 func TestDecodeBadStart(t *testing.T) {
 	testDecoderError(t, "ff00", "data stream corrupt")
 }
@@ -168,7 +172,11 @@ func TestDecodeTruncated(t *testing.T) {
 	testDecoderError(t, "1a32ffff1a33ff", "frame truncated")
 }
 
-func TestDecodeUnsupported(t *testing.T) {
+func TestDecodeUnsupported1(t *testing.T) {
+	testDecoderError(t, "1affffff", "unsupported frame type")
+}
+
+func TestDecodeUnsupported2(t *testing.T) {
 	testDecoderError(t, "1a31ffffffffffffffffff", "format not supported")
 }
 

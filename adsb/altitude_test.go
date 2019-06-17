@@ -26,6 +26,16 @@ import (
 	"testing"
 )
 
+func TestAlt13(t *testing.T) {
+	a, err := decodeAlt13(0x102A)
+	if err != nil {
+		t.Errorf("received %s, expected nil", err)
+	}
+	if a != 1300 {
+		t.Errorf("received %d, expected 1300", a)
+	}
+}
+
 func TestAlt13Errors(t *testing.T) {
 	_, err := decodeAlt13(0xF000)
 	if err == nil {
