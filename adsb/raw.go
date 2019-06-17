@@ -37,9 +37,9 @@ func (r RawBytes) Bit(n int) uint8 {
 		panic("bit must be within message length")
 	}
 
-	n -= 1
+	n--
 
-	return uint8((r[n/8] >> (7 - uint(n%8))) & 0x01)
+	return (r[n/8] >> (7 - uint(n%8))) & 0x01
 }
 
 // Bits64 returns bits n through z of the RawBytes message, where the

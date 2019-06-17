@@ -88,7 +88,7 @@ func decodeAlt12(a uint16) (int64, error) {
 // code" to the standard decimal value
 func grayDecode(b uint64) uint64 {
 	for z := uint(32); z >= 1; z /= 2 {
-		b = b ^ (b >> z)
+		b ^= (b >> z)
 	}
 	return b
 }
