@@ -24,8 +24,8 @@ package adsb
 
 // Message is an ADS-B message
 type Message struct {
-	raw    RawBytes // raw message
-	parity uint32   // parity
+	raw    RawMessage // raw message
+	parity uint32     // parity
 
 	DF DF // downlink format
 	CA CA // capability

@@ -20,416 +20,456 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package adsb
+package adsb_test
 
 import (
+	"encoding"
 	"encoding/hex"
+	"fmt"
 	"testing"
+
+	"kreklow.us/go/go-adsb/adsb"
 )
 
-// TestRawBit tests RawBytes.Bit
+// Test that RawMessage correctly implements unmarshaling
+func TestRawUnmarshal(t *testing.T) {
+	if t.Run("Interface", testRawUnmarshalInterface) {
+		t.Run("NilPointer", testRawUnmarshalNil)
+		t.Run("ShortMsg", testRawUnmarshalShort)
+		t.Run("Success", testRawUnmarshalSuccess)
+	}
+}
+
+func testRawUnmarshalInterface(t *testing.T) {
+	var i interface{} = new(adsb.RawMessage)
+	if _, ok := i.(encoding.BinaryUnmarshaler); !ok {
+		t.Fatal("RawMessage does not implement encoding.BinaryUnmarshaler")
+	}
+}
+
+func testRawUnmarshalNil(t *testing.T) {
+	errm := "can't unmarshal to nil pointer"
+	var m *adsb.RawMessage
+	err := m.UnmarshalBinary([]byte{0xf0, 0x0f})
+	if err == nil {
+		t.Fatal("expected error, received nil")
+	} else if err.Error() != errm {
+		t.Fatalf("expected: %s ; received: %s", errm, err)
+	}
+}
+
+func testRawUnmarshalShort(t *testing.T) {
+	errm := "incorrect data length"
+	m := new(adsb.RawMessage)
+	err := m.UnmarshalBinary([]byte{0xf0, 0x0f})
+	if err == nil {
+		t.Fatal("expected error, received nil")
+	} else if err.Error() != errm {
+		t.Fatalf("expected: %s ; received: %s", errm, err)
+	}
+}
+
+func testRawUnmarshalSuccess(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff")
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	m := new(adsb.RawMessage)
+	err = m.UnmarshalBinary(b)
+	if err != nil {
+		t.Fatalf("expected: nil; received: %s", err)
+	}
+	ev := "&[0 170 187 204 221 238 255]"
+	rv := fmt.Sprintf("%v", m)
+	if ev != rv {
+		t.Fatalf("expected: %s; received %s", ev, rv)
+	}
+}
+
+// Test Bit method
 func TestRawBit(t *testing.T) {
-	t.Run("Negative n", testBitNeg)
-	t.Run("Zero n", testBitZero)
-	t.Run("Large n", testBitLarge)
-	t.Run("Good n", testBitGood)
+	t.Run("Negative", testRawBitNeg)
+	t.Run("Zero", testRawBitZero)
+	t.Run("Large", testRawBitLarge)
+	t.Run("Good", testRawBitGood)
 }
 
-// TestRawBits tests RawBytes.Bits*
-func TestRawBits(t *testing.T) {
-	t.Run("Negative n", testBitsNeg)
-	t.Run("Zero n", testBitsZero)
-	t.Run("Large z", testBitsLarge)
-	t.Run("Reverse 64", testBits64Rev)
-	t.Run("Big 64", testBits64Big)
-	t.Run("Good 64", testBits64Good)
-	t.Run("Reverse 32", testBits32Rev)
-	t.Run("Big 32", testBits32Big)
-	t.Run("Good 32", testBits32Good)
-	t.Run("Reverse 16", testBits16Rev)
-	t.Run("Big 16", testBits16Big)
-	t.Run("Good 16", testBits16Good)
-	t.Run("Reverse 8", testBits8Rev)
-	t.Run("Big 8", testBits8Big)
-	t.Run("Good 8", testBits8Good)
-}
-
-// test negative bit address
-func testBitNeg(t *testing.T) {
-	msg, err := hex.DecodeString("ff00ff00")
+func testRawBitNeg(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r RawBytes = msg
+	var r adsb.RawMessage = b
 	defer func() {
 		p := recover()
 		if p != "bit must be greater than 0" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	b := r.Bit(-10)
-	if b != 0 {
-		t.Error("received unexpected value:", b)
+	bit := r.Bit(-10)
+	if bit != 0 {
+		t.Error("received unexpected value:", bit)
 	}
 }
 
-// test zero bit address
-func testBitZero(t *testing.T) {
-	msg, err := hex.DecodeString("ff00ff00")
+func testRawBitZero(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r RawBytes = msg
+	var r adsb.RawMessage = b
 	defer func() {
 		p := recover()
 		if p != "bit must be greater than 0" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	b := r.Bit(0)
-	if b != 0 {
-		t.Error("received unexpected value:", b)
+	bit := r.Bit(0)
+	if bit != 0 {
+		t.Error("received unexpected value:", bit)
 	}
 }
 
-// test large bit address
-func testBitLarge(t *testing.T) {
-	msg, err := hex.DecodeString("ff00ff00")
+func testRawBitLarge(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r RawBytes = msg
+	var r adsb.RawMessage = b
 	defer func() {
 		p := recover()
 		if p != "bit must be within message length" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	b := r.Bit(99)
-	if b != 0 {
-		t.Error("received unexpected value:", b)
+	bit := r.Bit(99)
+	if bit != 0 {
+		t.Error("received unexpected value:", bit)
 	}
 }
 
-// test good bit address
-func testBitGood(t *testing.T) {
-	msg, err := hex.DecodeString("ff00ff00")
+func testRawBitGood(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r RawBytes = msg
+	var r adsb.RawMessage = b
 	defer func() {
 		p := recover()
 		if p != nil {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	b := r.Bit(18)
-	if b != 1 {
-		t.Error("received unexpected value:", b)
+	bit := r.Bit(17)
+	if bit != 1 {
+		t.Error("received unexpected value:", bit)
 	}
 }
 
-// test negative bit address
-func testBitsNeg(t *testing.T) {
-	msg, err := hex.DecodeString("ff00ff00")
+// Test Bits* methods
+func TestRawBits(t *testing.T) {
+	t.Run("Negative", testRawBitsNeg)
+	t.Run("Zero", testRawBitsZero)
+	t.Run("Large", testRawBitsLarge)
+	t.Run("Reverse64", testRawBits64Rev)
+	t.Run("Big64", testRawBits64Big)
+	t.Run("Good64", testRawBits64Good)
+	t.Run("Reverse32", testRawBits32Rev)
+	t.Run("Big32", testRawBits32Big)
+	t.Run("Good32", testRawBits32Good)
+	t.Run("Reverse16", testRawBits16Rev)
+	t.Run("Big16", testRawBits16Big)
+	t.Run("Good16", testRawBits16Good)
+	t.Run("Reverse8", testRawBits8Rev)
+	t.Run("Big8", testRawBits8Big)
+	t.Run("Good8", testRawBits8Good)
+}
+
+func testRawBitsNeg(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r RawBytes = msg
+	var r adsb.RawMessage = b
 	defer func() {
 		p := recover()
 		if p != "bit must be greater than 0" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	b := r.Bits64(-10, 20)
-	if b != 0 {
-		t.Error("received unexpected value:", b)
+	bits := r.Bits64(-10, 20)
+	if bits != 0 {
+		t.Error("received unexpected value:", bits)
 	}
 }
 
-// test zero bit address
-func testBitsZero(t *testing.T) {
-	msg, err := hex.DecodeString("ff00ff00")
+func testRawBitsZero(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r RawBytes = msg
+	var r adsb.RawMessage = b
 	defer func() {
 		p := recover()
 		if p != "bit must be greater than 0" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	b := r.Bits64(0, 20)
-	if b != 0 {
-		t.Error("received unexpected value:", b)
+	bits := r.Bits64(0, 20)
+	if bits != 0 {
+		t.Error("received unexpected value:", bits)
 	}
 }
 
-// test large bit address
-func testBitsLarge(t *testing.T) {
-	msg, err := hex.DecodeString("ff00ff00")
+func testRawBitsLarge(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r RawBytes = msg
+	var r adsb.RawMessage = b
 	defer func() {
 		p := recover()
 		if p != "bit must be within message length" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	b := r.Bits64(20, 80)
-	if b != 0 {
-		t.Error("received unexpected value:", b)
+	bits := r.Bits64(20, 80)
+	if bits != 0 {
+		t.Error("received unexpected value:", bits)
 	}
 }
 
-// test reverse bit address
-func testBits64Rev(t *testing.T) {
-	msg, err := hex.DecodeString("ff00ff00")
+func testRawBits64Rev(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r RawBytes = msg
+	var r adsb.RawMessage = b
 	defer func() {
 		p := recover()
 		if p != "upper bound must be greater than lower bound" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	b := r.Bits64(20, 20)
-	if b != 0 {
-		t.Error("received unexpected value:", b)
+	bits := r.Bits64(20, 20)
+	if bits != 0 {
+		t.Error("received unexpected value:", bits)
 	}
 }
 
-// test too many bits
-func testBits64Big(t *testing.T) {
-	msg, err := hex.DecodeString("ff00ff00ff00ff00ff00ff00")
+func testRawBits64Big(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r RawBytes = msg
+	var r adsb.RawMessage = b
 	defer func() {
 		p := recover()
 		if p != "maximum of 64 bits exceeded" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	b := r.Bits64(1, 70)
-	if b != 0 {
-		t.Error("received unexpected value:", b)
+	bits := r.Bits64(1, 70)
+	if bits != 0 {
+		t.Error("received unexpected value:", bits)
 	}
 }
 
-// test good request
-func testBits64Good(t *testing.T) {
-	msg, err := hex.DecodeString("ff00ff00")
+func testRawBits64Good(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r RawBytes = msg
+	var r adsb.RawMessage = b
 	defer func() {
 		p := recover()
 		if p != nil {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	b := r.Bits64(20, 30)
-	if b != 0x07C0 {
-		t.Errorf("received unexpected value: %x", b)
+	bits := r.Bits64(20, 30)
+	if bits != 0x06F3 {
+		t.Errorf("received unexpected value: %x", bits)
 	}
 }
 
-// test reverse bit address
-func testBits32Rev(t *testing.T) {
-	msg, err := hex.DecodeString("ff00ff00")
+func testRawBits32Rev(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r RawBytes = msg
+	var r adsb.RawMessage = b
 	defer func() {
 		p := recover()
 		if p != "upper bound must be greater than lower bound" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	b := r.Bits32(20, 20)
-	if b != 0 {
-		t.Error("received unexpected value:", b)
+	bits := r.Bits32(20, 10)
+	if bits != 0 {
+		t.Error("received unexpected value:", bits)
 	}
 }
 
-// test too many bits
-func testBits32Big(t *testing.T) {
-	msg, err := hex.DecodeString("ff00ff00ff00ff00ff00ff00")
+func testRawBits32Big(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r RawBytes = msg
+	var r adsb.RawMessage = b
 	defer func() {
 		p := recover()
 		if p != "maximum of 32 bits exceeded" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	b := r.Bits32(1, 70)
-	if b != 0 {
-		t.Error("received unexpected value:", b)
+	bits := r.Bits32(1, 70)
+	if bits != 0 {
+		t.Error("received unexpected value:", bits)
 	}
 }
 
-// test good request
-func testBits32Good(t *testing.T) {
-	msg, err := hex.DecodeString("ff00ff00")
+func testRawBits32Good(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r RawBytes = msg
+	var r adsb.RawMessage = b
 	defer func() {
 		p := recover()
 		if p != nil {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	b := r.Bits32(20, 30)
-	if b != 0x07C0 {
-		t.Errorf("received unexpected value: %x", b)
+	bits := r.Bits32(25, 40)
+	if bits != 0xCCDD {
+		t.Errorf("received unexpected value: %x", bits)
 	}
 }
 
-// test reverse bit address
-func testBits16Rev(t *testing.T) {
-	msg, err := hex.DecodeString("ff00ff00")
+func testRawBits16Rev(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r RawBytes = msg
+	var r adsb.RawMessage = b
 	defer func() {
 		p := recover()
 		if p != "upper bound must be greater than lower bound" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	b := r.Bits16(20, 20)
-	if b != 0 {
-		t.Error("received unexpected value:", b)
+	bits := r.Bits16(20, 20)
+	if bits != 0 {
+		t.Error("received unexpected value:", bits)
 	}
 }
 
-// test too many bits
-func testBits16Big(t *testing.T) {
-	msg, err := hex.DecodeString("ff00ff00ff00ff00ff00ff00")
+func testRawBits16Big(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r RawBytes = msg
+	var r adsb.RawMessage = b
 	defer func() {
 		p := recover()
 		if p != "maximum of 16 bits exceeded" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	b := r.Bits16(1, 70)
-	if b != 0 {
-		t.Error("received unexpected value:", b)
+	bits := r.Bits16(1, 70)
+	if bits != 0 {
+		t.Error("received unexpected value:", bits)
 	}
 }
 
-// test good request
-func testBits16Good(t *testing.T) {
-	msg, err := hex.DecodeString("ff00ff00")
+func testRawBits16Good(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r RawBytes = msg
+	var r adsb.RawMessage = b
 	defer func() {
 		p := recover()
 		if p != nil {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	b := r.Bits16(20, 30)
-	if b != 0x07C0 {
-		t.Errorf("received unexpected value: %x", b)
+	bits := r.Bits16(13, 20)
+	if bits != 0xAB {
+		t.Errorf("received unexpected value: %x", bits)
 	}
 }
 
-// test reverse bit address
-func testBits8Rev(t *testing.T) {
-	msg, err := hex.DecodeString("ff00ff00")
+func testRawBits8Rev(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r RawBytes = msg
+	var r adsb.RawMessage = b
 	defer func() {
 		p := recover()
 		if p != "upper bound must be greater than lower bound" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	b := r.Bits8(20, 20)
-	if b != 0 {
-		t.Error("received unexpected value:", b)
+	bits := r.Bits8(100, 99)
+	if bits != 0 {
+		t.Error("received unexpected value:", bits)
 	}
 }
 
-// test too many bits
-func testBits8Big(t *testing.T) {
-	msg, err := hex.DecodeString("ff00ff00ff00ff00ff00ff00")
+func testRawBits8Big(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r RawBytes = msg
+	var r adsb.RawMessage = b
 	defer func() {
 		p := recover()
 		if p != "maximum of 8 bits exceeded" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	b := r.Bits8(1, 70)
-	if b != 0 {
-		t.Error("received unexpected value:", b)
+	bits := r.Bits8(1, 70)
+	if bits != 0 {
+		t.Error("received unexpected value:", bits)
 	}
 }
 
-// test good request
-func testBits8Good(t *testing.T) {
-	msg, err := hex.DecodeString("ff00ff00")
+func testRawBits8Good(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r RawBytes = msg
+	var r adsb.RawMessage = b
 	defer func() {
 		p := recover()
 		if p != nil {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	b := r.Bits8(20, 25)
-	if b != 0x3E {
-		t.Errorf("received unexpected value: %x", b)
+	bits := r.Bits8(10, 15)
+	if bits != 0x15 {
+		t.Errorf("received unexpected value: %x", bits)
 	}
 }
