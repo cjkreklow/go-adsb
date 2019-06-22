@@ -34,6 +34,7 @@ type testCase struct {
 	DF int
 	CA int
 	FS int
+	VS int
 
 	TC  int
 	SS  int
@@ -56,6 +57,7 @@ type testCase struct {
 
 // TestDecode runs the test cases for message decoding
 func TestDecode(t *testing.T) {
+	t.Run("DF0", testDF0)
 	t.Run("DF4", testDF4A)
 	t.Run("DF4 Gillham", testDF4B)
 	t.Run("DF5", testDF5)
@@ -68,6 +70,31 @@ func TestDecode(t *testing.T) {
 	t.Run("DF21", testDF21)
 }
 
+// test DF0 air-to-air surveillance
+func testDF0(t *testing.T) {
+	tc := &testCase{
+		Msg: "02e19718e70f6c",
+
+		DF: 0,
+		CA: -1,
+		FS: -1,
+		VS: 0,
+
+		TC:  -1,
+		SS:  -1,
+		Cat: 0,
+
+		CPR: false,
+
+		ICAO: "abd94d",
+		Alt:  36000,
+		Sqk:  "",
+		Call: "",
+	}
+
+	testDecode(t, tc)
+}
+
 // test DF4 with 25ft altitude report
 func testDF4A(t *testing.T) {
 	tc := &testCase{
@@ -76,6 +103,7 @@ func testDF4A(t *testing.T) {
 		DF: 4,
 		CA: -1,
 		FS: 0,
+		VS: -1,
 
 		TC:  -1,
 		SS:  -1,
@@ -100,6 +128,7 @@ func testDF4B(t *testing.T) {
 		DF: 4,
 		CA: -1,
 		FS: 0,
+		VS: -1,
 
 		TC:  -1,
 		SS:  -1,
@@ -124,6 +153,7 @@ func testDF5(t *testing.T) {
 		DF: 5,
 		CA: -1,
 		FS: 0,
+		VS: -1,
 
 		TC:  -1,
 		SS:  -1,
@@ -148,6 +178,7 @@ func testDF11(t *testing.T) {
 		DF: 11,
 		CA: 5,
 		FS: -1,
+		VS: -1,
 
 		TC:  -1,
 		SS:  -1,
@@ -172,6 +203,7 @@ func testDF20(t *testing.T) {
 		DF: 20,
 		CA: -1,
 		FS: 0,
+		VS: -1,
 
 		TC:  -1,
 		SS:  -1,
@@ -196,6 +228,7 @@ func testDF21(t *testing.T) {
 		DF: 21,
 		CA: -1,
 		FS: 4,
+		VS: -1,
 
 		TC:  -1,
 		SS:  -1,
@@ -220,6 +253,7 @@ func testDF17PosLocal(t *testing.T) {
 		DF: 17,
 		CA: 5,
 		FS: -1,
+		VS: -1,
 
 		TC:  12,
 		SS:  0,
@@ -249,6 +283,7 @@ func testDF17PosGlobal(t *testing.T) {
 		DF: 17,
 		CA: 5,
 		FS: -1,
+		VS: -1,
 
 		TC:  11,
 		SS:  0,
@@ -278,6 +313,7 @@ func testDF17PosGlobalRev(t *testing.T) {
 		DF: 17,
 		CA: 5,
 		FS: -1,
+		VS: -1,
 
 		TC:  11,
 		SS:  0,
@@ -307,6 +343,7 @@ func testDF17Ident(t *testing.T) {
 		DF: 17,
 		CA: 5,
 		FS: -1,
+		VS: -1,
 
 		TC:  4,
 		SS:  -1,
@@ -343,6 +380,9 @@ func testDecode(t *testing.T, tc *testCase) {
 	}
 	if msg.FS != FS(tc.FS) {
 		t.Errorf("FS: received %v, expected %v", int(msg.FS), tc.FS)
+	}
+	if msg.VS != VS(tc.VS) {
+		t.Errorf("VS: received %v, expected %v", int(msg.VS), tc.VS)
 	}
 	if msg.TC != TC(tc.TC) {
 		t.Errorf("TC: received %v, expected %v", int(msg.TC), tc.TC)

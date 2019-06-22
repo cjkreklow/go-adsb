@@ -140,6 +140,27 @@ func (c FS) String() string {
 	}
 }
 
+// VS is the vertical status
+type VS int
+
+// Vertical Status values
+const (
+	VS0 VS = 0 // Airborne
+	VS1 VS = 1 // On Ground
+)
+
+// String representation of VS
+func (c VS) String() string {
+	switch c {
+	case VS0:
+		return "Airborne"
+	case VS1:
+		return "On Ground"
+	default:
+		return fmt.Sprintf("Unknown value %d", c)
+	}
+}
+
 // TC is the extended squitter type
 type TC int
 

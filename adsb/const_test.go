@@ -32,6 +32,7 @@ func TestConst(t *testing.T) {
 	t.Run("DF", testDF)
 	t.Run("CA", testCA)
 	t.Run("FS", testFS)
+	t.Run("VS", testVS)
 	t.Run("TC", testTC)
 	t.Run("SS", testSS)
 }
@@ -86,6 +87,19 @@ func testFS(t *testing.T) {
 		99:  "FS: Unknown value 99",
 	} {
 		var result = fmt.Sprintf("FS: %s", val)
+		if result != out {
+			t.Errorf("%s: expected %s | received %s\n", val, out, result)
+		}
+	}
+}
+
+func testVS(t *testing.T) {
+	for val, out := range map[VS]string{
+		VS0: "VS: Airborne",
+		VS1: "VS: On Ground",
+		99:  "VS: Unknown value 99",
+	} {
+		var result = fmt.Sprintf("VS: %s", val)
 		if result != out {
 			t.Errorf("%s: expected %s | received %s\n", val, out, result)
 		}

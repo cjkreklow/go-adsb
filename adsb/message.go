@@ -30,6 +30,7 @@ type Message struct {
 	DF DF // downlink format
 	CA CA // capability
 	FS FS // flight status
+	VS VS // vertical status
 
 	TC  TC    // extended squitter type
 	SS  SS    // extended squitter surveillance status

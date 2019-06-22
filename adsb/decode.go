@@ -43,11 +43,12 @@ func (m *Message) Decode(msg []byte) error {
 	m.DF = DF(m.raw.Bits8(1, 5))
 	m.CA = -1
 	m.FS = -1
+	m.VS = -1
 	m.TC = -1
 	m.SS = -1
 
 	switch m.DF {
-	case DF4, DF20:
+	case DF0, DF16, DF4, DF20:
 		err = m.decodeAltMsg()
 	case DF5, DF21:
 		err = m.decodeIdentMsg()
@@ -73,9 +74,15 @@ func (m *Message) decode11() error {
 	return nil
 }
 
-// decode DF4 and DF20 altitude reply
+// decode DF0/DF16 air-to-air and DF4/DF20 altitude reply
 func (m *Message) decodeAltMsg() error {
-	m.FS = FS(m.raw.Bits8(6, 8))
+	switch m.DF {
+	case DF0, DF16:
+		m.VS = VS(m.raw.Bit(6))
+	case DF4, DF20:
+		m.FS = FS(m.raw.Bits8(6, 8))
+	}
+
 	m.setICAOFromAP()
 
 	a, err := decodeAlt13(m.raw.Bits16(20, 32))
@@ -163,7 +170,7 @@ func (m *Message) decode17() error {
 
 // utility function to set ICAO when XORed into an AP field
 func (m *Message) setICAOFromAP() {
-	b := m.raw.Bits32((len(m.raw)*8)-24, len(m.raw)*8)
+	b := m.raw.Bits32((len(m.raw)*8)-23, len(m.raw)*8)
 	m.ICAO = fmt.Sprintf("%06x", b^m.parity)
 }
 
