@@ -83,6 +83,13 @@ func (f *Frame) UnmarshalBinary(data []byte) error {
 	return nil
 }
 
+// Bytes returns a copy of the raw data used to create the Frame.
+func (f *Frame) Bytes() []byte {
+	b := make([]byte, len(f.raw))
+	copy(b, f.raw)
+	return b
+}
+
 // Decoder reads and decodes a Beast stream
 type Decoder struct {
 	r *bufio.Reader

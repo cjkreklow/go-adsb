@@ -70,6 +70,24 @@ func testUnmarshalError(t *testing.T, msg string, e string) {
 	}
 }
 
+func TestBytes(t *testing.T) {
+	m := "1a3216f933baf325c45da99adad95ff6"
+	b, err := hex.DecodeString(m)
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+	f := new(Frame)
+	err = f.UnmarshalBinary(b)
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+	rb := f.Bytes()
+	rm := hex.EncodeToString(rb)
+	if m != rm {
+		t.Errorf("received %s, expected %s", rm, m)
+	}
+}
+
 type testCase struct {
 	Msg string
 
