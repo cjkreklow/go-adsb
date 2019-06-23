@@ -251,6 +251,95 @@ func (c TC) String() string {
 	}
 }
 
+// AcCat is the extended squitter aircraft emitter category
+type AcCat string
+
+// Extended squitter aircraft emitter category values
+const (
+	A0 AcCat = "A0" // No ADS-B Emitter Category Information
+	A1 AcCat = "A1" // Light (< 15500 lbs)
+	A2 AcCat = "A2" // Small (15500 to 75000 lbs)
+	A3 AcCat = "A3" // Large (75000 to 300000 lbs)
+	A4 AcCat = "A4" // High Vortex Large (aircraft such as B-757)
+	A5 AcCat = "A5" // Heavy (> 300000 lbs)
+	A6 AcCat = "A6" // High Performance (> 5g acceleration and 400 kts)
+	A7 AcCat = "A7" // Rotorcraft
+
+	B0 AcCat = "B0" // No ADS-B Emitter Category Information
+	B1 AcCat = "B1" // Glider / sailplane
+	B2 AcCat = "B2" // Lighter-than-air
+	B3 AcCat = "B3" // Parachutist / Skydiver
+	B4 AcCat = "B4" // Ultralight / hang-glider / paraglider
+	B5 AcCat = "B5" // Reserved
+	B6 AcCat = "B6" // Unmanned Aerial Vehicle
+	B7 AcCat = "B7" // Space / Trans-atmospheric vehicle
+
+	C0 AcCat = "C0" // No ADS-B Emitter Category Information
+	C1 AcCat = "C1" // Surface Vehicle – Emergency Vehicle
+	C2 AcCat = "C2" // Surface Vehicle – Service Vehicle
+	C3 AcCat = "C3" // Point Obstacle (includes tethered balloons)
+	C4 AcCat = "C4" // Cluster Obstacle
+	C5 AcCat = "C5" // Line Obstacle
+	C6 AcCat = "C6" // Reserved
+	C7 AcCat = "C7" // Reserved
+)
+
+// String representation of AcCat
+func (c AcCat) String() string {
+	switch c {
+	case A0:
+		return "No ADS-B Emitter Category Information"
+	case A1:
+		return "Light (< 15500 lbs)"
+	case A2:
+		return "Small (15500 to 75000 lbs)"
+	case A3:
+		return "Large (75000 to 300000 lbs)"
+	case A4:
+		return "High Vortex Large (aircraft such as B-757)"
+	case A5:
+		return "Heavy (> 300000 lbs)"
+	case A6:
+		return "High Performance (> 5g acceleration and 400 kts)"
+	case A7:
+		return "Rotorcraft"
+	case B0:
+		return "No ADS-B Emitter Category Information"
+	case B1:
+		return "Glider / sailplane"
+	case B2:
+		return "Lighter-than-air"
+	case B3:
+		return "Parachutist / Skydiver"
+	case B4:
+		return "Ultralight / hang-glider / paraglider"
+	case B5:
+		return "Reserved"
+	case B6:
+		return "Unmanned Aerial Vehicle"
+	case B7:
+		return "Space / Trans-atmospheric vehicle"
+	case C0:
+		return "No ADS-B Emitter Category Information"
+	case C1:
+		return "Surface Vehicle – Emergency Vehicle"
+	case C2:
+		return "Surface Vehicle – Service Vehicle"
+	case C3:
+		return "Point Obstacle (includes tethered balloons)"
+	case C4:
+		return "Cluster Obstacle"
+	case C5:
+		return "Line Obstacle"
+	case C6:
+		return "Reserved"
+	case C7:
+		return "Reserved"
+	default:
+		return fmt.Sprintf("Unknown value %s", string(c))
+	}
+}
+
 // SS is the extended squitter surveillance status
 type SS int
 

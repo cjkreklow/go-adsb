@@ -20,13 +20,35 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package adsb
+package adsb_test
 
 import (
 	"encoding/hex"
 	"math/big"
 	"testing"
+
+	"kreklow.us/go/go-adsb/adsb"
 )
+
+// TestUnknown tests an unknown message format
+func TestUnknown(t *testing.T) {
+	raw, err := hex.DecodeString("ff0000000000ff000000000000ff")
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+	rm := new(adsb.RawMessage)
+	err = rm.UnmarshalBinary(raw)
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+	_, err = adsb.NewMessage(rm)
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+	if err.Error() != "unsupported format: 31 - Unknown value 31" {
+		t.Error("received unexpected error", err)
+	}
+}
 
 type testCase struct {
 	Msg string
@@ -38,21 +60,21 @@ type testCase struct {
 
 	TC  int
 	SS  int
-	Cat uint8
+	Cat string
 
 	CPR       bool
 	LocalPos  bool
-	RefPt     []float64
 	GlobalPos bool
+	RefPt     []float64
 	Msg2      string
 
 	Lat float64
 	Lon float64
 
 	ICAO string
-	Alt  int64
 	Sqk  string
 	Call string
+	Alt  int64
 }
 
 // TestDecode runs the test cases for message decoding
@@ -82,7 +104,7 @@ func testDF0(t *testing.T) {
 
 		TC:  -1,
 		SS:  -1,
-		Cat: 0,
+		Cat: "",
 
 		CPR: false,
 
@@ -107,7 +129,7 @@ func testDF4A(t *testing.T) {
 
 		TC:  -1,
 		SS:  -1,
-		Cat: 0,
+		Cat: "",
 
 		CPR: false,
 
@@ -132,7 +154,7 @@ func testDF4B(t *testing.T) {
 
 		TC:  -1,
 		SS:  -1,
-		Cat: 0,
+		Cat: "",
 
 		CPR: false,
 
@@ -157,7 +179,7 @@ func testDF5(t *testing.T) {
 
 		TC:  -1,
 		SS:  -1,
-		Cat: 0,
+		Cat: "",
 
 		CPR: false,
 
@@ -182,7 +204,7 @@ func testDF11(t *testing.T) {
 
 		TC:  -1,
 		SS:  -1,
-		Cat: 0,
+		Cat: "",
 
 		CPR: false,
 
@@ -207,7 +229,7 @@ func testDF20(t *testing.T) {
 
 		TC:  -1,
 		SS:  -1,
-		Cat: 0,
+		Cat: "",
 
 		CPR: false,
 
@@ -232,7 +254,7 @@ func testDF21(t *testing.T) {
 
 		TC:  -1,
 		SS:  -1,
-		Cat: 0,
+		Cat: "",
 
 		CPR: false,
 
@@ -257,7 +279,7 @@ func testDF17PosLocal(t *testing.T) {
 
 		TC:  12,
 		SS:  0,
-		Cat: 0,
+		Cat: "",
 
 		CPR:      true,
 		LocalPos: true,
@@ -287,7 +309,7 @@ func testDF17PosGlobal(t *testing.T) {
 
 		TC:  11,
 		SS:  0,
-		Cat: 0,
+		Cat: "",
 
 		CPR:       true,
 		GlobalPos: true,
@@ -317,7 +339,7 @@ func testDF17PosGlobalRev(t *testing.T) {
 
 		TC:  11,
 		SS:  0,
-		Cat: 0,
+		Cat: "",
 
 		CPR:       true,
 		GlobalPos: true,
@@ -347,7 +369,7 @@ func testDF17Ident(t *testing.T) {
 
 		TC:  4,
 		SS:  -1,
-		Cat: 3,
+		Cat: "A3",
 
 		CPR: false,
 
@@ -366,55 +388,58 @@ func testDecode(t *testing.T, tc *testCase) {
 		t.Fatal("received unexpected error", err)
 	}
 
-	msg := new(Message)
-	err = msg.Decode(b)
+	msg := new(adsb.Message)
+	err = msg.UnmarshalBinary(b)
 	if err != nil {
 		t.Fatal("received unexpected error", err)
 	}
 
-	if msg.DF != DF(tc.DF) {
-		t.Errorf("DF: received %v, expected %v", int(msg.DF), tc.DF)
+	if msg.DF() != adsb.DF(tc.DF) {
+		t.Errorf("DF: received %v, expected %v", int(msg.DF()), tc.DF)
 	}
-	if msg.CA != CA(tc.CA) {
-		t.Errorf("CA: received %v, expected %v", int(msg.CA), tc.CA)
+	if msg.CA() != adsb.CA(tc.CA) {
+		t.Errorf("CA: received %v, expected %v", int(msg.CA()), tc.CA)
 	}
-	if msg.FS != FS(tc.FS) {
-		t.Errorf("FS: received %v, expected %v", int(msg.FS), tc.FS)
+	if msg.FS() != adsb.FS(tc.FS) {
+		t.Errorf("FS: received %v, expected %v", int(msg.FS()), tc.FS)
 	}
-	if msg.VS != VS(tc.VS) {
-		t.Errorf("VS: received %v, expected %v", int(msg.VS), tc.VS)
+	if msg.VS() != adsb.VS(tc.VS) {
+		t.Errorf("VS: received %v, expected %v", int(msg.VS()), tc.VS)
 	}
-	if msg.TC != TC(tc.TC) {
-		t.Errorf("TC: received %v, expected %v", int(msg.TC), tc.TC)
+	if msg.TC() != adsb.TC(tc.TC) {
+		t.Errorf("TC: received %v, expected %v", int(msg.TC()), tc.TC)
 	}
-	if msg.SS != SS(tc.SS) {
-		t.Errorf("SS: received %v, expected %v", int(msg.SS), tc.SS)
+	if msg.SS() != adsb.SS(tc.SS) {
+		t.Errorf("SS: received %v, expected %v", int(msg.SS()), tc.SS)
 	}
-	if msg.Cat != tc.Cat {
-		t.Errorf("Cat: received %v, expected %v", msg.Cat, tc.Cat)
+	if msg.AcCat() != adsb.AcCat(tc.Cat) {
+		t.Errorf("AcCat: received %v, expected %v", msg.AcCat(), tc.Cat)
 	}
-	if msg.ICAO != tc.ICAO {
-		t.Errorf("ICAO: received %s, expected %s", msg.ICAO, tc.ICAO)
+	if msg.ICAO() != tc.ICAO {
+		t.Errorf("ICAO: received %s, expected %s", msg.ICAO(), tc.ICAO)
 	}
-	if msg.Alt != tc.Alt {
-		t.Errorf("Alt: received %v, expected %v", msg.Alt, tc.Alt)
+	if msg.Sqk() != tc.Sqk {
+		t.Errorf("Sqk: received %s, expected %s", msg.Sqk(), tc.Sqk)
 	}
-	if msg.Sqk != tc.Sqk {
-		t.Errorf("Sqk: received %s, expected %s", msg.Sqk, tc.Sqk)
-	}
-	if msg.Call != tc.Call {
-		t.Errorf("Call: received %s, expected %s", msg.Call, tc.Call)
+	if msg.Call() != tc.Call {
+		t.Errorf("Call: received %s, expected %s", msg.Call(), tc.Call)
 	}
 
-	if !tc.CPR && msg.CPR != nil {
+	a, _ := msg.Alt()
+	if a != tc.Alt {
+		t.Errorf("Alt: received %v, expected %v", a, tc.Alt)
+	}
+
+	cpr, _ := msg.CPR()
+	if !tc.CPR && cpr != nil {
 		t.Error("CPR: unexpected position report populated")
 	}
 
 	if tc.CPR && tc.LocalPos {
-		if msg.CPR == nil {
+		if cpr == nil {
 			t.Error("CPR: expected but not present")
 		} else {
-			c, err := msg.CPR.DecodeLocal(tc.RefPt)
+			c, err := cpr.DecodeLocal(tc.RefPt)
 			if err != nil {
 				t.Error("CPR: local decode error:", err)
 			} else {
@@ -437,22 +462,28 @@ func testDecode(t *testing.T, tc *testCase) {
 	}
 
 	if tc.CPR && tc.GlobalPos {
-		if msg.CPR == nil {
+		if cpr == nil {
 			t.Error("CPR: expected but not present")
 		} else {
-			m2 := new(Message)
+			rm2 := new(adsb.RawMessage)
 			m2b, err := (hex.DecodeString(tc.Msg2))
 			if err != nil {
 				t.Fatal("received unexpected error", err)
 			}
-			err = m2.Decode(m2b)
+			err = rm2.UnmarshalBinary(m2b)
 			if err != nil {
 				t.Fatal("received unexpected error", err)
 			}
-			if m2.CPR == nil {
+			m2, err := adsb.NewMessage(rm2)
+			if err != nil {
+				t.Fatal("received unexpected error", err)
+			}
+
+			cpr2, _ := m2.CPR()
+			if cpr2 == nil {
 				t.Fatal("no position decoded in Msg2")
 			}
-			c, err := DecodeGlobalPosition(msg.CPR, m2.CPR)
+			c, err := adsb.DecodeGlobalPosition(cpr, cpr2)
 			if err != nil {
 				t.Error("CPR: global decode error:", err)
 			} else {

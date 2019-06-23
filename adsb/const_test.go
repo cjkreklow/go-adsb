@@ -35,6 +35,7 @@ func TestConst(t *testing.T) {
 	t.Run("VS", testVS)
 	t.Run("TC", testTC)
 	t.Run("SS", testSS)
+	t.Run("AcCat", testAcCat)
 }
 
 func testDF(t *testing.T) {
@@ -151,6 +152,41 @@ func testSS(t *testing.T) {
 		99:  "SS: Unknown value 99",
 	} {
 		var result = fmt.Sprintf("SS: %s", val)
+		if result != out {
+			t.Errorf("%s: expected %s | received %s\n", val, out, result)
+		}
+	}
+}
+
+func testAcCat(t *testing.T) {
+	for val, out := range map[AcCat]string{
+		A0:   "AcCat: No ADS-B Emitter Category Information",
+		A1:   "AcCat: Light (< 15500 lbs)",
+		A2:   "AcCat: Small (15500 to 75000 lbs)",
+		A3:   "AcCat: Large (75000 to 300000 lbs)",
+		A4:   "AcCat: High Vortex Large (aircraft such as B-757)",
+		A5:   "AcCat: Heavy (> 300000 lbs)",
+		A6:   "AcCat: High Performance (> 5g acceleration and 400 kts)",
+		A7:   "AcCat: Rotorcraft",
+		B0:   "AcCat: No ADS-B Emitter Category Information",
+		B1:   "AcCat: Glider / sailplane",
+		B2:   "AcCat: Lighter-than-air",
+		B3:   "AcCat: Parachutist / Skydiver",
+		B4:   "AcCat: Ultralight / hang-glider / paraglider",
+		B5:   "AcCat: Reserved",
+		B6:   "AcCat: Unmanned Aerial Vehicle",
+		B7:   "AcCat: Space / Trans-atmospheric vehicle",
+		C0:   "AcCat: No ADS-B Emitter Category Information",
+		C1:   "AcCat: Surface Vehicle – Emergency Vehicle",
+		C2:   "AcCat: Surface Vehicle – Service Vehicle",
+		C3:   "AcCat: Point Obstacle (includes tethered balloons)",
+		C4:   "AcCat: Cluster Obstacle",
+		C5:   "AcCat: Line Obstacle",
+		C6:   "AcCat: Reserved",
+		C7:   "AcCat: Reserved",
+		"99": "AcCat: Unknown value 99",
+	} {
+		var result = fmt.Sprintf("AcCat: %s", val)
 		if result != out {
 			t.Errorf("%s: expected %s | received %s\n", val, out, result)
 		}
