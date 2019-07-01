@@ -457,6 +457,7 @@ func TestRawDecode(t *testing.T) {
 	t.Run("DF0", testRawDF0)
 	t.Run("DF4", testRawDF4)
 	t.Run("DF5", testRawDF5)
+	t.Run("DF11", testRawDF11)
 	t.Run("DF16", testRawDF16)
 	t.Run("DF17", testRawDF17)
 	t.Run("DF18", testRawDF18)
@@ -504,6 +505,17 @@ func testRawDF5(t *testing.T) {
 	}
 
 	testRaw(t, "2ab800673a57d0", results)
+}
+
+func testRawDF11(t *testing.T) {
+	results := map[string][]byte{
+		"AA": []byte{0xaa, 0x23, 0x4a},
+		"CA": []byte{0x05},
+		"DF": []byte{0x0b},
+		"PI": []byte{0x91, 0x28, 0x89},
+	}
+
+	testRaw(t, "5daa234a912889", results)
 }
 
 func testRawDF16(t *testing.T) {
