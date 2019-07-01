@@ -22,7 +22,20 @@
 
 package adsb
 
-import "errors"
+import (
+	"errors"
+)
+
+type fieldError string
+
+func (e fieldError) Error() string {
+	return string(e)
+}
+
+const (
+	errNotLoaded    fieldError = "data not loaded"
+	errNotAvailable fieldError = "field not available"
+)
 
 // RawMessage is a raw binary ADS-B message with helper methods for
 // unmarshaling and retrieving arbitrary bit sequences.
@@ -39,6 +52,330 @@ func (r *RawMessage) UnmarshalBinary(data []byte) error {
 	}
 	*r = append((*r)[0:0], data...)
 	return nil
+}
+
+// AA returns the Address Announced field.
+func (r RawMessage) AA() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 11, 17, 18:
+		return r.bytes(9, 32), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// AC returns the Altitude Code field.
+func (r RawMessage) AC() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 0, 4, 16, 20:
+		return r.bytes(20, 32), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// AF returns the Application Field.
+func (r RawMessage) AF() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 19:
+		return r.bytes(6, 8), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// AP returns the Address / Parity field.
+func (r RawMessage) AP() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 0, 4, 5:
+		return r.bytes(33, 56), nil
+	case 16, 20, 21, 24:
+		return r.bytes(89, 112), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// CA returns the Capability field.
+func (r RawMessage) CA() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 11, 17:
+		return r.bytes(6, 8), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// CC returns the Cross-link Capability field.
+func (r RawMessage) CC() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 0:
+		return r.bytes(7, 7), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// CF returns the Control Field.
+func (r RawMessage) CF() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 18:
+		return r.bytes(6, 8), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// DF returns the Downlink Format field.
+func (r RawMessage) DF() ([]byte, error) {
+	if len(r) == 0 {
+		return nil, errNotLoaded
+	}
+	b := r.bytes(1, 5)
+	if b[0] > 24 {
+		b[0] = 24
+	}
+	return b, nil
+}
+
+// DP returns the Data Parity field.
+func (r RawMessage) DP() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 20, 21:
+		return r.bytes(89, 112), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// DR returns the Downlink Request field.
+func (r RawMessage) DR() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 4, 5, 20, 21:
+		return r.bytes(9, 13), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// FS returns the Flight Status field.
+func (r RawMessage) FS() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 4, 5, 20, 21:
+		return r.bytes(6, 8), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// ID returns the Identity field.
+func (r RawMessage) ID() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 5, 21:
+		return r.bytes(20, 32), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// KE returns the ELM Control field.
+func (r RawMessage) KE() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 24:
+		return r.bytes(4, 4), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// MB returns the Comm-B Message field.
+func (r RawMessage) MB() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 20, 21:
+		return r.bytes(33, 88), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// MD returns the Comm-D Message field.
+func (r RawMessage) MD() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 24:
+		return r.bytes(9, 88), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// ME returns the Extended Squitter Message field.
+func (r RawMessage) ME() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 17, 18:
+		return r.bytes(33, 88), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// MV returns the ACAS Message field.
+func (r RawMessage) MV() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 16:
+		return r.bytes(33, 88), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// ND returns the Number of D-segment field.
+func (r RawMessage) ND() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 24:
+		return r.bytes(5, 8), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// PI returns the Parity / Interrogator Identifier field.
+func (r RawMessage) PI() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 11:
+		return r.bytes(33, 56), nil
+	case 17, 18:
+		return r.bytes(89, 112), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// RI returns the Reply Information field.
+func (r RawMessage) RI() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 0, 16:
+		return r.bytes(14, 17), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// SL returns the Sensitivity Level field.
+func (r RawMessage) SL() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 0, 16:
+		return r.bytes(9, 11), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// UM returns the Utility Message field.
+func (r RawMessage) UM() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 4, 5, 20, 21:
+		return r.bytes(14, 19), nil
+	default:
+		return nil, errNotAvailable
+	}
+}
+
+// VS returns the Vertical Status field.
+func (r RawMessage) VS() ([]byte, error) {
+	df, err := r.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df[0] {
+	case 0, 16:
+		return r.bytes(6, 6), nil
+	default:
+		return nil, errNotAvailable
+	}
 }
 
 // Bit returns the n-th bit of the RawMessage, where the first bit is
@@ -143,4 +480,27 @@ func (r RawMessage) Bits8(n int, z int) uint8 {
 	}
 
 	return b
+}
+
+func (r RawMessage) bytes(n int, z int) []byte {
+	if z < n {
+		panic("upper bound must not be less than lower bound")
+	}
+
+	bytes := make([]byte, ((z-n)/8)+1)
+
+	var bits uint8
+	var j int
+
+	for i := n; i <= z; i++ {
+		bits <<= 1
+		bits |= r.Bit(i)
+		if (z-i)%8 == 0 {
+			bytes[j] = bits
+			j++
+			bits = 0
+		}
+	}
+
+	return bytes
 }

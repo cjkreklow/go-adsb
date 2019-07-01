@@ -23,20 +23,18 @@
 package adsb_test
 
 import (
+	"bytes"
 	"encoding"
 	"encoding/hex"
-	"fmt"
 	"testing"
 
 	"kreklow.us/go/go-adsb/adsb"
 )
 
-// Test that RawMessage correctly implements unmarshaling
-func TestRawUnmarshal(t *testing.T) {
+func TestRawUnmarshalErrors(t *testing.T) {
 	if t.Run("Interface", testRawUnmarshalInterface) {
 		t.Run("NilPointer", testRawUnmarshalNil)
 		t.Run("ShortMsg", testRawUnmarshalShort)
-		t.Run("Success", testRawUnmarshalSuccess)
 	}
 }
 
@@ -69,24 +67,6 @@ func testRawUnmarshalShort(t *testing.T) {
 	}
 }
 
-func testRawUnmarshalSuccess(t *testing.T) {
-	b, err := hex.DecodeString("00aabbccddeeff")
-	if err != nil {
-		t.Fatalf("unexpected error: %s", err)
-	}
-	m := new(adsb.RawMessage)
-	err = m.UnmarshalBinary(b)
-	if err != nil {
-		t.Fatalf("expected: nil; received: %s", err)
-	}
-	ev := "&[0 170 187 204 221 238 255]"
-	rv := fmt.Sprintf("%v", m)
-	if ev != rv {
-		t.Fatalf("expected: %s; received %s", ev, rv)
-	}
-}
-
-// Test Bit method
 func TestRawBit(t *testing.T) {
 	t.Run("Negative", testRawBitNeg)
 	t.Run("Zero", testRawBitZero)
@@ -170,7 +150,6 @@ func testRawBitGood(t *testing.T) {
 	}
 }
 
-// Test Bits* methods
 func TestRawBits(t *testing.T) {
 	t.Run("Negative", testRawBitsNeg)
 	t.Run("Zero", testRawBitsZero)
@@ -471,5 +450,223 @@ func testRawBits8Good(t *testing.T) {
 	bits := r.Bits8(10, 15)
 	if bits != 0x15 {
 		t.Errorf("received unexpected value: %x", bits)
+	}
+}
+
+func TestRawDecode(t *testing.T) {
+	t.Run("DF0", testRawDF0)
+	t.Run("DF4", testRawDF4)
+	t.Run("DF5", testRawDF5)
+	t.Run("DF16", testRawDF16)
+	t.Run("DF17", testRawDF17)
+	t.Run("DF18", testRawDF18)
+	t.Run("DF19", testRawDF19)
+	t.Run("DF20", testRawDF20)
+	t.Run("DF21", testRawDF21)
+	t.Run("DF24", testRawDF24)
+}
+
+func testRawDF0(t *testing.T) {
+	results := map[string][]byte{
+		"AC": []byte{0x03, 0xbb},
+		"AP": []byte{0x45, 0x1e, 0x00},
+		"CC": []byte{0x01},
+		"DF": []byte{0x00},
+		"RI": []byte{0x03},
+		"SL": []byte{0x05},
+		"VS": []byte{0x00},
+	}
+
+	testRaw(t, "02a183bb451e00", results)
+}
+
+func testRawDF4(t *testing.T) {
+	results := map[string][]byte{
+		"AC": []byte{0x0d, 0xb8},
+		"AP": []byte{0x67, 0x65, 0x2d},
+		"DF": []byte{0x04},
+		"DR": []byte{0x00},
+		"FS": []byte{0x00},
+		"UM": []byte{0x00},
+	}
+
+	testRaw(t, "20000db867652d", results)
+}
+
+func testRawDF5(t *testing.T) {
+	results := map[string][]byte{
+		"AP": []byte{0x3a, 0x57, 0xd0},
+		"DF": []byte{0x05},
+		"DR": []byte{0x17},
+		"ID": []byte{0x00, 0x67},
+		"FS": []byte{0x02},
+		"UM": []byte{0x00},
+	}
+
+	testRaw(t, "2ab800673a57d0", results)
+}
+
+func testRawDF16(t *testing.T) {
+	results := map[string][]byte{
+		"AC": []byte{0x15, 0x30},
+		"AP": []byte{0x09, 0xc8, 0x6e},
+		"DF": []byte{0x10},
+		"MV": []byte{0x58, 0xab, 0x01, 0x60, 0xa0, 0x9b, 0xe8},
+		"RI": []byte{0x03},
+		"SL": []byte{0x07},
+		"VS": []byte{0x00},
+	}
+
+	testRaw(t, "80e1953058ab0160a09be809c86e", results)
+}
+
+func testRawDF17(t *testing.T) {
+	results := map[string][]byte{
+		"AA": []byte{0xa2, 0xf1, 0x11},
+		"CA": []byte{0x05},
+		"DF": []byte{0x11},
+		"ME": []byte{0x58, 0x1f, 0xb4, 0x84, 0x2d, 0x1f, 0x59},
+		"PI": []byte{0xee, 0xa2, 0xb7},
+	}
+
+	testRaw(t, "8da2f111581fb4842d1f59eea2b7", results)
+}
+
+func testRawDF18(t *testing.T) {
+	results := map[string][]byte{
+		"AA": []byte{0xa1, 0xce, 0x0e},
+		"CF": []byte{0x02},
+		"DF": []byte{0x12},
+		"ME": []byte{0x90, 0xb9, 0x73, 0xc2, 0x6a, 0x38, 0x0f},
+		"PI": []byte{0x56, 0x25, 0x4c},
+	}
+
+	testRaw(t, "92a1ce0e90b973c26a380f56254c", results)
+}
+
+func testRawDF19(t *testing.T) {
+	results := map[string][]byte{
+		"AF": []byte{0x02},
+		"DF": []byte{0x13},
+	}
+
+	testRaw(t, "9aa1ce0e90b973c26a380f56254c", results)
+}
+
+func testRawDF20(t *testing.T) {
+	results := map[string][]byte{
+		"AC": []byte{0x14, 0x97},
+		"AP": []byte{0x5b, 0x75, 0x7a},
+		"DF": []byte{0x14},
+		"DP": []byte{0x5b, 0x75, 0x7a},
+		"DR": []byte{0x00},
+		"FS": []byte{0x00},
+		"MB": []byte{0x10, 0x03, 0x0a, 0x80, 0xe5, 0x00, 0x00},
+		"UM": []byte{0x00},
+	}
+
+	testRaw(t, "a000149710030a80e500005b757a", results)
+	//testRaw(t, "a52e1487466f35e5af8b4db41af0", results)
+}
+
+func testRawDF21(t *testing.T) {
+	results := map[string][]byte{
+		"AP": []byte{0xba, 0x4f, 0x91},
+		"DF": []byte{0x15},
+		"DP": []byte{0xba, 0x4f, 0x91},
+		"DR": []byte{0x1d},
+		"ID": []byte{0x18, 0x60},
+		"FS": []byte{0x00},
+		"MB": []byte{0x15, 0xa6, 0x8e, 0x5b, 0xae, 0xdb, 0x2a},
+		"UM": []byte{0x0b},
+	}
+
+	testRaw(t, "a8e9786015a68e5baedb2aba4f91", results)
+}
+
+func testRawDF24(t *testing.T) {
+	results := map[string][]byte{
+		"AP": []byte{0x6d, 0xb1, 0xa1},
+		"DF": []byte{0x18},
+		"KE": []byte{0x00},
+		"MD": []byte{0x25, 0x54, 0x48, 0xac, 0x2a, 0x74, 0xd0, 0x03, 0x54, 0x7a},
+		"ND": []byte{0x02},
+	}
+
+	testRaw(t, "c2255448ac2a74d003547a6db1a1", results)
+}
+
+func testRaw(t *testing.T, m string, results map[string][]byte) {
+	msg, err := hex.DecodeString(m)
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
+
+	rm := new(adsb.RawMessage)
+	err = rm.UnmarshalBinary(msg)
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
+
+	funcs := map[string]func() ([]byte, error){
+		"AA": rm.AA, "AC": rm.AC, "AF": rm.AF, "AP": rm.AP,
+		"CA": rm.CA, "CC": rm.CC, "CF": rm.CF,
+		"DF": rm.DF, "DP": rm.DP, "DR": rm.DR,
+		"FS": rm.FS, "ID": rm.ID, "KE": rm.KE,
+		"MB": rm.MB, "MD": rm.MD, "ME": rm.ME, "MV": rm.MV,
+		"ND": rm.ND, "PI": rm.PI, "RI": rm.RI,
+		"SL": rm.SL, "UM": rm.UM, "VS": rm.VS,
+	}
+
+	for n, f := range funcs {
+		if r, ok := results[n]; ok {
+			b, err := f()
+			if err != nil {
+				t.Errorf("%s  unexpected error: %v", n, err)
+			}
+			if !bytes.Equal(r, b) {
+				t.Errorf("%s  expected: %x  received: %x", n, r, b)
+			}
+		} else {
+			b, err := f()
+			if err == nil {
+				t.Errorf("%s  expected: error  received: %v", n, err)
+			} else if err.Error() != "field not available" {
+				t.Errorf("%s  expected: field not available  received: %v", n, err)
+			}
+			if b != nil {
+				t.Errorf("%s  expected: nil  received: %v", n, b)
+			}
+		}
+	}
+}
+
+func TestRawFieldErrors(t *testing.T) {
+	t.Run("NotLoaded", testRawFieldsNotLoaded)
+	//t.Run("NotAvaliable", testRawFieldsNotAvailable)
+}
+
+func testRawFieldsNotLoaded(t *testing.T) {
+	rm := new(adsb.RawMessage)
+	fields := map[string]func() ([]byte, error){
+		"AA": rm.AA, "AC": rm.AC, "AF": rm.AF, "AP": rm.AP,
+		"CA": rm.CA, "CC": rm.CC, "CF": rm.CF,
+		"DF": rm.DF, "DP": rm.DP, "DR": rm.DR,
+		"FS": rm.FS, "ID": rm.ID, "KE": rm.KE,
+		"MB": rm.MB, "MD": rm.MD, "ME": rm.ME, "MV": rm.MV,
+		"ND": rm.ND, "PI": rm.PI, "RI": rm.RI,
+		"SL": rm.SL, "UM": rm.UM, "VS": rm.VS,
+	}
+
+	for n, f := range fields {
+		b, err := f()
+		if err == nil {
+			t.Errorf("%s  expected: error  received: nil", n)
+		} else if err.Error() != "data not loaded" {
+			t.Errorf("%s  expected: data not loaded  received: %v", n, err)
+		}
+		if b != nil {
+			t.Errorf("%s  expected: nil  received: %v", n, b)
+		}
 	}
 }
