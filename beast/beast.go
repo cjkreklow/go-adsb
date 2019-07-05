@@ -26,15 +26,16 @@
 package beast
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
-	"math/big"
 	"time"
 )
 
-// Frame is a Mode-S Beast format message
+// Frame is a Mode-S Beast format message. A Frame is safe to reuse by
+// calling UnmarshalBinary with new data.
 type Frame struct {
-	raw []byte
+	raw bytes.Buffer
 
 	Format    uint8 // 1: Mode-AC, 2: Short Mode-S, 3: Long Mode-S, 4: Status
 	Signal    uint8
@@ -43,6 +44,11 @@ type Frame struct {
 
 // UnmarshalBinary stores unescaped Beast data into the Frame.
 func (f *Frame) UnmarshalBinary(data []byte) error {
+	f.raw.Reset()
+	f.Format = 0
+	f.Signal = 0
+	f.Timestamp = 0
+
 	if data[0] != 0x1a {
 		return errors.New("format identifier not found")
 	}
@@ -51,13 +57,13 @@ func (f *Frame) UnmarshalBinary(data []byte) error {
 		if len(data) != 16 {
 			return fmt.Errorf("expected 16 bytes, received %d", len(data))
 		}
-		f.raw = data
+		f.raw.Write(data)
 		f.Format = 2
 	case 0x33:
 		if len(data) != 23 {
 			return fmt.Errorf("expected 23 bytes, received %d", len(data))
 		}
-		f.raw = data
+		f.raw.Write(data)
 		f.Format = 3
 	case 0x31, 0x34:
 		return errors.New("format not supported")
@@ -65,24 +71,27 @@ func (f *Frame) UnmarshalBinary(data []byte) error {
 		return errors.New("invalid format identifier")
 	}
 
-	f.Signal = f.raw[8]
+	f.Signal = data[8]
 	f.Timestamp = time.Microsecond *
-		time.Duration(big.NewInt(0).SetBytes(f.raw[2:8]).Int64()/12)
+		time.Duration(((int64(data[2])<<40)|(int64(data[3])<<32)|
+			(int64(data[4])<<24)|(int64(data[5])<<16)|
+			(int64(data[6])<<8)|int64(data[7]))/12)
 
 	return nil
 }
 
-// Bytes returns a copy of the raw data used to create the Frame.
-func (f Frame) Bytes() []byte {
-	b := make([]byte, len(f.raw))
-	copy(b, f.raw)
-	return b
+// Bytes exposes the underlying raw data used to create the Frame. The
+// returned slice remains valid until the next call to UnmarshalBinary.
+// Modifying the returned slice directly may impact future calls to
+// Bytes() or ADSB().
+func (f *Frame) Bytes() []byte {
+	return f.raw.Bytes()
 }
 
-// ADSB returns a copy of the 56- or 112-bit ADS-B data encoded in the
-// Frame.
-func (f Frame) ADSB() []byte {
-	b := make([]byte, len(f.raw)-9)
-	copy(b, f.raw[9:])
-	return b
+// ADSB exposes the 56- or 112-bit ADS-B data encoded in the Frame. The
+// returned slice remains valid until the next call to UnmarshalBinary.
+// Modifying the returned slice directly may impact future calls to
+// Bytes() or ADSB().
+func (f *Frame) ADSB() []byte {
+	return f.raw.Bytes()[9:]
 }

@@ -24,6 +24,7 @@ package beast
 
 import (
 	"bufio"
+	"bytes"
 	"encoding"
 	"errors"
 	"io"
@@ -31,7 +32,8 @@ import (
 
 // Decoder reads and decodes a Beast stream
 type Decoder struct {
-	r *bufio.Reader
+	r   *bufio.Reader
+	buf bytes.Buffer
 }
 
 // NewDecoder returns a Decoder which reads from r.
@@ -43,9 +45,10 @@ func NewDecoder(r io.Reader) *Decoder {
 
 // Decode reads the next Beast frame from the input source and stores it
 // in f. The UnmarshalBinary method of f must support unescaped Beast
-// format data.
+// format data. The data passed to f remains valid only until the next
+// call to Decode().
 func (d *Decoder) Decode(f encoding.BinaryUnmarshaler) error {
-	m := make([]byte, 0, 64)
+	defer d.buf.Reset()
 
 	b, err := d.r.ReadByte()
 	if err != nil {
@@ -55,29 +58,29 @@ func (d *Decoder) Decode(f encoding.BinaryUnmarshaler) error {
 		return errors.New("data stream corrupt")
 	}
 
-	m = append(m, b)
+	d.buf.WriteByte(b)
 
 	b, err = d.r.ReadByte()
 	if err != nil {
 		return err
 	}
 
-	var l int
+	var msglen int
 
 	switch b {
 	case 0x31:
-		l = 11
+		msglen = 11
 	case 0x32:
-		l = 16
+		msglen = 16
 	case 0x33:
-		l = 23
+		msglen = 23
 	default:
 		return errors.New("unsupported frame type")
 	}
 
-	m = append(m, b)
+	d.buf.WriteByte(b)
 
-	for j := len(m); j < l; j = len(m) {
+	for j := d.buf.Len(); j < msglen; j = d.buf.Len() {
 		b, err = d.r.ReadByte()
 		if err != nil {
 			return err
@@ -98,10 +101,10 @@ func (d *Decoder) Decode(f encoding.BinaryUnmarshaler) error {
 				return errors.New("frame truncated")
 			}
 		}
-		m = append(m, b)
+		d.buf.WriteByte(b)
 	}
 
-	err = f.UnmarshalBinary(m)
+	err = f.UnmarshalBinary(d.buf.Bytes())
 	if err != nil {
 		return err
 	}
