@@ -33,7 +33,6 @@ import (
 
 func TestRawUnmarshalErrors(t *testing.T) {
 	if t.Run("Interface", testRawUnmarshalInterface) {
-		t.Run("NilPointer", testRawUnmarshalNil)
 		t.Run("ShortMsg", testRawUnmarshalShort)
 	}
 }
@@ -42,17 +41,6 @@ func testRawUnmarshalInterface(t *testing.T) {
 	var i interface{} = new(adsb.RawMessage)
 	if _, ok := i.(encoding.BinaryUnmarshaler); !ok {
 		t.Fatal("RawMessage does not implement encoding.BinaryUnmarshaler")
-	}
-}
-
-func testRawUnmarshalNil(t *testing.T) {
-	errm := "can't unmarshal to nil pointer"
-	var m *adsb.RawMessage
-	err := m.UnmarshalBinary([]byte{0xf0, 0x0f})
-	if err == nil {
-		t.Fatal("expected error, received nil")
-	} else if err.Error() != errm {
-		t.Fatalf("expected: %s ; received: %s", errm, err)
 	}
 }
 
@@ -80,7 +68,12 @@ func testRawBitNeg(t *testing.T) {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r adsb.RawMessage = b
+	r := new(adsb.RawMessage)
+	err = r.UnmarshalBinary(b)
+	if err != nil {
+		t.Fatal("received unexpected error:", err)
+	}
+
 	defer func() {
 		p := recover()
 		if p != "bit must be greater than 0" {
@@ -99,7 +92,12 @@ func testRawBitZero(t *testing.T) {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r adsb.RawMessage = b
+	r := new(adsb.RawMessage)
+	err = r.UnmarshalBinary(b)
+	if err != nil {
+		t.Fatal("received unexpected error:", err)
+	}
+
 	defer func() {
 		p := recover()
 		if p != "bit must be greater than 0" {
@@ -118,7 +116,12 @@ func testRawBitLarge(t *testing.T) {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r adsb.RawMessage = b
+	r := new(adsb.RawMessage)
+	err = r.UnmarshalBinary(b)
+	if err != nil {
+		t.Fatal("received unexpected error:", err)
+	}
+
 	defer func() {
 		p := recover()
 		if p != "bit must be within message length" {
@@ -137,7 +140,12 @@ func testRawBitGood(t *testing.T) {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r adsb.RawMessage = b
+	r := new(adsb.RawMessage)
+	err = r.UnmarshalBinary(b)
+	if err != nil {
+		t.Fatal("received unexpected error:", err)
+	}
+
 	defer func() {
 		p := recover()
 		if p != nil {
@@ -154,18 +162,9 @@ func TestRawBits(t *testing.T) {
 	t.Run("Negative", testRawBitsNeg)
 	t.Run("Zero", testRawBitsZero)
 	t.Run("Large", testRawBitsLarge)
-	t.Run("Reverse64", testRawBits64Rev)
-	t.Run("Big64", testRawBits64Big)
-	t.Run("Good64", testRawBits64Good)
-	t.Run("Reverse32", testRawBits32Rev)
-	t.Run("Big32", testRawBits32Big)
-	t.Run("Good32", testRawBits32Good)
-	t.Run("Reverse16", testRawBits16Rev)
-	t.Run("Big16", testRawBits16Big)
-	t.Run("Good16", testRawBits16Good)
-	t.Run("Reverse8", testRawBits8Rev)
-	t.Run("Big8", testRawBits8Big)
-	t.Run("Good8", testRawBits8Good)
+	t.Run("Reverse", testRawBitsRev)
+	t.Run("Big", testRawBitsBig)
+	t.Run("Good", testRawBitsGood)
 }
 
 func testRawBitsNeg(t *testing.T) {
@@ -174,14 +173,19 @@ func testRawBitsNeg(t *testing.T) {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r adsb.RawMessage = b
+	r := new(adsb.RawMessage)
+	err = r.UnmarshalBinary(b)
+	if err != nil {
+		t.Fatal("received unexpected error:", err)
+	}
+
 	defer func() {
 		p := recover()
-		if p != "bit must be greater than 0" {
+		if p != "lower bound must be greater than 0" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	bits := r.Bits64(-10, 20)
+	bits := r.Bits(-10, 20)
 	if bits != 0 {
 		t.Error("received unexpected value:", bits)
 	}
@@ -193,14 +197,19 @@ func testRawBitsZero(t *testing.T) {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r adsb.RawMessage = b
+	r := new(adsb.RawMessage)
+	err = r.UnmarshalBinary(b)
+	if err != nil {
+		t.Fatal("received unexpected error:", err)
+	}
+
 	defer func() {
 		p := recover()
-		if p != "bit must be greater than 0" {
+		if p != "lower bound must be greater than 0" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	bits := r.Bits64(0, 20)
+	bits := r.Bits(0, 20)
 	if bits != 0 {
 		t.Error("received unexpected value:", bits)
 	}
@@ -212,243 +221,92 @@ func testRawBitsLarge(t *testing.T) {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r adsb.RawMessage = b
+	r := new(adsb.RawMessage)
+	err = r.UnmarshalBinary(b)
+	if err != nil {
+		t.Fatal("received unexpected error:", err)
+	}
+
 	defer func() {
 		p := recover()
-		if p != "bit must be within message length" {
+		if p != "upper bound must be within message length" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	bits := r.Bits64(20, 80)
+	bits := r.Bits(20, 80)
 	if bits != 0 {
 		t.Error("received unexpected value:", bits)
 	}
 }
 
-func testRawBits64Rev(t *testing.T) {
+func testRawBitsRev(t *testing.T) {
 	b, err := hex.DecodeString("00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r adsb.RawMessage = b
+	r := new(adsb.RawMessage)
+	err = r.UnmarshalBinary(b)
+	if err != nil {
+		t.Fatal("received unexpected error:", err)
+	}
+
 	defer func() {
 		p := recover()
 		if p != "upper bound must be greater than lower bound" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	bits := r.Bits64(20, 20)
+	bits := r.Bits(21, 20)
 	if bits != 0 {
 		t.Error("received unexpected value:", bits)
 	}
 }
 
-func testRawBits64Big(t *testing.T) {
-	b, err := hex.DecodeString("00aabbccddeeff")
+func testRawBitsBig(t *testing.T) {
+	b, err := hex.DecodeString("00aabbccddeeff00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r adsb.RawMessage = b
+	r := new(adsb.RawMessage)
+	err = r.UnmarshalBinary(b)
+	if err != nil {
+		t.Fatal("received unexpected error:", err)
+	}
+
 	defer func() {
 		p := recover()
 		if p != "maximum of 64 bits exceeded" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	bits := r.Bits64(1, 70)
+	bits := r.Bits(1, 70)
 	if bits != 0 {
 		t.Error("received unexpected value:", bits)
 	}
 }
 
-func testRawBits64Good(t *testing.T) {
+func testRawBitsGood(t *testing.T) {
 	b, err := hex.DecodeString("00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
 
-	var r adsb.RawMessage = b
+	r := new(adsb.RawMessage)
+	err = r.UnmarshalBinary(b)
+	if err != nil {
+		t.Fatal("received unexpected error:", err)
+	}
+
 	defer func() {
 		p := recover()
 		if p != nil {
 			t.Error("unexpected panic:", p)
 		}
 	}()
-	bits := r.Bits64(20, 30)
+	bits := r.Bits(20, 30)
 	if bits != 0x06F3 {
-		t.Errorf("received unexpected value: %x", bits)
-	}
-}
-
-func testRawBits32Rev(t *testing.T) {
-	b, err := hex.DecodeString("00aabbccddeeff")
-	if err != nil {
-		t.Fatal("received unexpected error:", err)
-	}
-
-	var r adsb.RawMessage = b
-	defer func() {
-		p := recover()
-		if p != "upper bound must be greater than lower bound" {
-			t.Error("unexpected panic:", p)
-		}
-	}()
-	bits := r.Bits32(20, 10)
-	if bits != 0 {
-		t.Error("received unexpected value:", bits)
-	}
-}
-
-func testRawBits32Big(t *testing.T) {
-	b, err := hex.DecodeString("00aabbccddeeff")
-	if err != nil {
-		t.Fatal("received unexpected error:", err)
-	}
-
-	var r adsb.RawMessage = b
-	defer func() {
-		p := recover()
-		if p != "maximum of 32 bits exceeded" {
-			t.Error("unexpected panic:", p)
-		}
-	}()
-	bits := r.Bits32(1, 70)
-	if bits != 0 {
-		t.Error("received unexpected value:", bits)
-	}
-}
-
-func testRawBits32Good(t *testing.T) {
-	b, err := hex.DecodeString("00aabbccddeeff")
-	if err != nil {
-		t.Fatal("received unexpected error:", err)
-	}
-
-	var r adsb.RawMessage = b
-	defer func() {
-		p := recover()
-		if p != nil {
-			t.Error("unexpected panic:", p)
-		}
-	}()
-	bits := r.Bits32(25, 40)
-	if bits != 0xCCDD {
-		t.Errorf("received unexpected value: %x", bits)
-	}
-}
-
-func testRawBits16Rev(t *testing.T) {
-	b, err := hex.DecodeString("00aabbccddeeff")
-	if err != nil {
-		t.Fatal("received unexpected error:", err)
-	}
-
-	var r adsb.RawMessage = b
-	defer func() {
-		p := recover()
-		if p != "upper bound must be greater than lower bound" {
-			t.Error("unexpected panic:", p)
-		}
-	}()
-	bits := r.Bits16(20, 20)
-	if bits != 0 {
-		t.Error("received unexpected value:", bits)
-	}
-}
-
-func testRawBits16Big(t *testing.T) {
-	b, err := hex.DecodeString("00aabbccddeeff")
-	if err != nil {
-		t.Fatal("received unexpected error:", err)
-	}
-
-	var r adsb.RawMessage = b
-	defer func() {
-		p := recover()
-		if p != "maximum of 16 bits exceeded" {
-			t.Error("unexpected panic:", p)
-		}
-	}()
-	bits := r.Bits16(1, 70)
-	if bits != 0 {
-		t.Error("received unexpected value:", bits)
-	}
-}
-
-func testRawBits16Good(t *testing.T) {
-	b, err := hex.DecodeString("00aabbccddeeff")
-	if err != nil {
-		t.Fatal("received unexpected error:", err)
-	}
-
-	var r adsb.RawMessage = b
-	defer func() {
-		p := recover()
-		if p != nil {
-			t.Error("unexpected panic:", p)
-		}
-	}()
-	bits := r.Bits16(13, 20)
-	if bits != 0xAB {
-		t.Errorf("received unexpected value: %x", bits)
-	}
-}
-
-func testRawBits8Rev(t *testing.T) {
-	b, err := hex.DecodeString("00aabbccddeeff00aabbccddeeff")
-	if err != nil {
-		t.Fatal("received unexpected error:", err)
-	}
-
-	var r adsb.RawMessage = b
-	defer func() {
-		p := recover()
-		if p != "upper bound must be greater than lower bound" {
-			t.Error("unexpected panic:", p)
-		}
-	}()
-	bits := r.Bits8(100, 99)
-	if bits != 0 {
-		t.Error("received unexpected value:", bits)
-	}
-}
-
-func testRawBits8Big(t *testing.T) {
-	b, err := hex.DecodeString("00aabbccddeeff")
-	if err != nil {
-		t.Fatal("received unexpected error:", err)
-	}
-
-	var r adsb.RawMessage = b
-	defer func() {
-		p := recover()
-		if p != "maximum of 8 bits exceeded" {
-			t.Error("unexpected panic:", p)
-		}
-	}()
-	bits := r.Bits8(1, 70)
-	if bits != 0 {
-		t.Error("received unexpected value:", bits)
-	}
-}
-
-func testRawBits8Good(t *testing.T) {
-	b, err := hex.DecodeString("00aabbccddeeff")
-	if err != nil {
-		t.Fatal("received unexpected error:", err)
-	}
-
-	var r adsb.RawMessage = b
-	defer func() {
-		p := recover()
-		if p != nil {
-			t.Error("unexpected panic:", p)
-		}
-	}()
-	bits := r.Bits8(10, 15)
-	if bits != 0x15 {
 		t.Errorf("received unexpected value: %x", bits)
 	}
 }
@@ -468,113 +326,113 @@ func TestRawDecode(t *testing.T) {
 }
 
 func testRawDF0(t *testing.T) {
-	results := map[string][]byte{
-		"AC": {0x03, 0xbb},
-		"AP": {0x45, 0x1e, 0x00},
-		"CC": {0x01},
-		"DF": {0x00},
-		"RI": {0x03},
-		"SL": {0x05},
-		"VS": {0x00},
+	results := map[string]uint64{
+		"AC": 0x03bb,
+		"AP": 0x451e00,
+		"CC": 0x01,
+		"DF": 0x00,
+		"RI": 0x03,
+		"SL": 0x05,
+		"VS": 0x00,
 	}
 
 	testRaw(t, "02a183bb451e00", results)
 }
 
 func testRawDF4(t *testing.T) {
-	results := map[string][]byte{
-		"AC": {0x0d, 0xb8},
-		"AP": {0x67, 0x65, 0x2d},
-		"DF": {0x04},
-		"DR": {0x00},
-		"FS": {0x00},
-		"UM": {0x00},
+	results := map[string]uint64{
+		"AC": 0x0db8,
+		"AP": 0x67652d,
+		"DF": 0x04,
+		"DR": 0x00,
+		"FS": 0x00,
+		"UM": 0x00,
 	}
 
 	testRaw(t, "20000db867652d", results)
 }
 
 func testRawDF5(t *testing.T) {
-	results := map[string][]byte{
-		"AP": {0x3a, 0x57, 0xd0},
-		"DF": {0x05},
-		"DR": {0x17},
-		"ID": {0x00, 0x67},
-		"FS": {0x02},
-		"UM": {0x00},
+	results := map[string]uint64{
+		"AP": 0x3a57d0,
+		"DF": 0x05,
+		"DR": 0x17,
+		"ID": 0x0067,
+		"FS": 0x02,
+		"UM": 0x00,
 	}
 
 	testRaw(t, "2ab800673a57d0", results)
 }
 
 func testRawDF11(t *testing.T) {
-	results := map[string][]byte{
-		"AA": {0xaa, 0x23, 0x4a},
-		"CA": {0x05},
-		"DF": {0x0b},
-		"PI": {0x91, 0x28, 0x89},
+	results := map[string]uint64{
+		"AA": 0xaa234a,
+		"CA": 0x05,
+		"DF": 0x0b,
+		"PI": 0x912889,
 	}
 
 	testRaw(t, "5daa234a912889", results)
 }
 
 func testRawDF16(t *testing.T) {
-	results := map[string][]byte{
-		"AC": {0x15, 0x30},
-		"AP": {0x09, 0xc8, 0x6e},
-		"DF": {0x10},
-		"MV": {0x58, 0xab, 0x01, 0x60, 0xa0, 0x9b, 0xe8},
-		"RI": {0x03},
-		"SL": {0x07},
-		"VS": {0x00},
+	results := map[string]uint64{
+		"AC": 0x1530,
+		"AP": 0x09c86e,
+		"DF": 0x10,
+		"MV": 0x58ab0160a09be8,
+		"RI": 0x03,
+		"SL": 0x07,
+		"VS": 0x00,
 	}
 
 	testRaw(t, "80e1953058ab0160a09be809c86e", results)
 }
 
 func testRawDF17(t *testing.T) {
-	results := map[string][]byte{
-		"AA": {0xa2, 0xf1, 0x11},
-		"CA": {0x05},
-		"DF": {0x11},
-		"ME": {0x58, 0x1f, 0xb4, 0x84, 0x2d, 0x1f, 0x59},
-		"PI": {0xee, 0xa2, 0xb7},
+	results := map[string]uint64{
+		"AA": 0xa2f111,
+		"CA": 0x05,
+		"DF": 0x11,
+		"ME": 0x581fb4842d1f59,
+		"PI": 0xeea2b7,
 	}
 
 	testRaw(t, "8da2f111581fb4842d1f59eea2b7", results)
 }
 
 func testRawDF18(t *testing.T) {
-	results := map[string][]byte{
-		"AA": {0xa1, 0xce, 0x0e},
-		"CF": {0x02},
-		"DF": {0x12},
-		"ME": {0x90, 0xb9, 0x73, 0xc2, 0x6a, 0x38, 0x0f},
-		"PI": {0x56, 0x25, 0x4c},
+	results := map[string]uint64{
+		"AA": 0xa1ce0e,
+		"CF": 0x02,
+		"DF": 0x12,
+		"ME": 0x90b973c26a380f,
+		"PI": 0x56254c,
 	}
 
 	testRaw(t, "92a1ce0e90b973c26a380f56254c", results)
 }
 
 func testRawDF19(t *testing.T) {
-	results := map[string][]byte{
-		"AF": {0x02},
-		"DF": {0x13},
+	results := map[string]uint64{
+		"AF": 0x02,
+		"DF": 0x13,
 	}
 
 	testRaw(t, "9aa1ce0e90b973c26a380f56254c", results)
 }
 
 func testRawDF20(t *testing.T) {
-	results := map[string][]byte{
-		"AC": {0x14, 0x97},
-		"AP": {0x5b, 0x75, 0x7a},
-		"DF": {0x14},
-		"DP": {0x5b, 0x75, 0x7a},
-		"DR": {0x00},
-		"FS": {0x00},
-		"MB": {0x10, 0x03, 0x0a, 0x80, 0xe5, 0x00, 0x00},
-		"UM": {0x00},
+	results := map[string]uint64{
+		"AC": 0x1497,
+		"AP": 0x5b757a,
+		"DF": 0x14,
+		"DP": 0x5b757a,
+		"DR": 0x00,
+		"FS": 0x00,
+		"MB": 0x10030a80e50000,
+		"UM": 0x00,
 	}
 
 	testRaw(t, "a000149710030a80e500005b757a", results)
@@ -582,33 +440,34 @@ func testRawDF20(t *testing.T) {
 }
 
 func testRawDF21(t *testing.T) {
-	results := map[string][]byte{
-		"AP": {0xba, 0x4f, 0x91},
-		"DF": {0x15},
-		"DP": {0xba, 0x4f, 0x91},
-		"DR": {0x1d},
-		"ID": {0x18, 0x60},
-		"FS": {0x00},
-		"MB": {0x15, 0xa6, 0x8e, 0x5b, 0xae, 0xdb, 0x2a},
-		"UM": {0x0b},
+	results := map[string]uint64{
+		"AP": 0xba4f91,
+		"DF": 0x15,
+		"DP": 0xba4f91,
+		"DR": 0x1d,
+		"ID": 0x1860,
+		"FS": 0x00,
+		"MB": 0x15a68e5baedb2a,
+		"UM": 0x0b,
 	}
 
 	testRaw(t, "a8e9786015a68e5baedb2aba4f91", results)
 }
 
 func testRawDF24(t *testing.T) {
-	results := map[string][]byte{
-		"AP": {0x6d, 0xb1, 0xa1},
-		"DF": {0x18},
-		"KE": {0x00},
-		"MD": {0x25, 0x54, 0x48, 0xac, 0x2a, 0x74, 0xd0, 0x03, 0x54, 0x7a},
-		"ND": {0x02},
+	results := map[string]uint64{
+		"AP": 0x6db1a1,
+		"DF": 0x18,
+		"KE": 0x00,
+		"ND": 0x02,
 	}
+	md := []byte{0x25, 0x54, 0x48, 0xac, 0x2a, 0x74, 0xd0, 0x03, 0x54, 0x7a}
 
 	testRaw(t, "c2255448ac2a74d003547a6db1a1", results)
+	testRawMD(t, "c2255448ac2a74d003547a6db1a1", md)
 }
 
-func testRaw(t *testing.T, m string, results map[string][]byte) {
+func testRaw(t *testing.T, m string, results map[string]uint64) {
 	msg, err := hex.DecodeString(m)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
@@ -620,12 +479,12 @@ func testRaw(t *testing.T, m string, results map[string][]byte) {
 		t.Fatalf("unexpected error %v", err)
 	}
 
-	funcs := map[string]func() ([]byte, error){
+	funcs := map[string]func() (uint64, error){
 		"AA": rm.AA, "AC": rm.AC, "AF": rm.AF, "AP": rm.AP,
 		"CA": rm.CA, "CC": rm.CC, "CF": rm.CF,
 		"DF": rm.DF, "DP": rm.DP, "DR": rm.DR,
 		"FS": rm.FS, "ID": rm.ID, "KE": rm.KE,
-		"MB": rm.MB, "MD": rm.MD, "ME": rm.ME, "MV": rm.MV,
+		"MB": rm.MB, "ME": rm.ME, "MV": rm.MV,
 		"ND": rm.ND, "PI": rm.PI, "RI": rm.RI,
 		"SL": rm.SL, "UM": rm.UM, "VS": rm.VS,
 	}
@@ -636,7 +495,7 @@ func testRaw(t *testing.T, m string, results map[string][]byte) {
 			if err != nil {
 				t.Errorf("%s  unexpected error: %v", n, err)
 			}
-			if !bytes.Equal(r, b) {
+			if r != b {
 				t.Errorf("%s  expected: %x  received: %x", n, r, b)
 			}
 		} else {
@@ -646,26 +505,56 @@ func testRaw(t *testing.T, m string, results map[string][]byte) {
 			} else if err.Error() != "field not available" {
 				t.Errorf("%s  expected: field not available  received: %v", n, err)
 			}
-			if b != nil {
-				t.Errorf("%s  expected: nil  received: %v", n, b)
+			if b != 0 {
+				t.Errorf("%s  expected: 0  received: %v", n, b)
 			}
 		}
 	}
 }
 
-func TestRawFieldErrors(t *testing.T) {
-	t.Run("NotLoaded", testRawFieldsNotLoaded)
-	//t.Run("NotAvaliable", testRawFieldsNotAvailable)
+func testRawMD(t *testing.T, m string, r []byte) {
+	msg, err := hex.DecodeString(m)
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
+
+	rm := new(adsb.RawMessage)
+	err = rm.UnmarshalBinary(msg)
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
+
+	n := "MD"
+
+	if r != nil {
+		b, err := rm.MD()
+		if err != nil {
+			t.Errorf("%s  unexpected error: %v", n, err)
+		}
+		if !bytes.Equal(r, b) {
+			t.Errorf("%s  expected: %x  received: %x", n, r, b)
+		}
+	} else {
+		b, err := rm.MD()
+		if err == nil {
+			t.Errorf("%s  expected: error  received: %v", n, err)
+		} else if err.Error() != "field not available" {
+			t.Errorf("%s  expected: field not available  received: %v", n, err)
+		}
+		if b != nil {
+			t.Errorf("%s  expected: nil  received: %v", n, b)
+		}
+	}
 }
 
-func testRawFieldsNotLoaded(t *testing.T) {
+func TestRawFieldsNotLoaded(t *testing.T) {
 	rm := new(adsb.RawMessage)
-	fields := map[string]func() ([]byte, error){
+	fields := map[string]func() (uint64, error){
 		"AA": rm.AA, "AC": rm.AC, "AF": rm.AF, "AP": rm.AP,
 		"CA": rm.CA, "CC": rm.CC, "CF": rm.CF,
 		"DF": rm.DF, "DP": rm.DP, "DR": rm.DR,
 		"FS": rm.FS, "ID": rm.ID, "KE": rm.KE,
-		"MB": rm.MB, "MD": rm.MD, "ME": rm.ME, "MV": rm.MV,
+		"MB": rm.MB, "ME": rm.ME, "MV": rm.MV,
 		"ND": rm.ND, "PI": rm.PI, "RI": rm.RI,
 		"SL": rm.SL, "UM": rm.UM, "VS": rm.VS,
 	}
@@ -677,8 +566,25 @@ func testRawFieldsNotLoaded(t *testing.T) {
 		} else if err.Error() != "data not loaded" {
 			t.Errorf("%s  expected: data not loaded  received: %v", n, err)
 		}
-		if b != nil {
-			t.Errorf("%s  expected: nil  received: %v", n, b)
+		if b != 0 {
+			t.Errorf("%s  expected: 0  received: %v", n, b)
 		}
+	}
+
+	n := "MD"
+	b, err := rm.MD()
+	if err == nil {
+		t.Errorf("%s  expected: error  received: nil", n)
+	} else if err.Error() != "data not loaded" {
+		t.Errorf("%s  expected: data not loaded  received: %v", n, err)
+	}
+	if b != nil {
+		t.Errorf("%s  expected: nil  received: %v", n, b)
+	}
+
+	n = "Parity"
+	p := rm.Parity()
+	if p != 0 {
+		t.Errorf("%s  expected: 0  received: %x", n, p)
 	}
 }

@@ -83,7 +83,7 @@ type CA int
 // Capability values
 const (
 	CA0 CA = 0 // Level 1
-	CA4 CA = 4 // Level 2 - On Ground
+	CA4 CA = 4 // Level 2 - On ground
 	CA5 CA = 5 // Level 2 - Airborne
 	CA6 CA = 6 // Level 2
 	CA7 CA = 7 // CA=7
@@ -95,7 +95,7 @@ func (c CA) String() string {
 	case CA0:
 		return "Level 1"
 	case CA4:
-		return "Level 2 - On Ground"
+		return "Level 2 - On ground"
 	case CA5:
 		return "Level 2 - Airborne"
 	case CA6:
@@ -107,34 +107,70 @@ func (c CA) String() string {
 	}
 }
 
+// CF is the control field
+type CF int
+
+// Control Field values
+const (
+	CF0 CF = 0 // ADS-B message, non-transponder device with ICAO address
+	CF1 CF = 1 // ADS-B message, anonymous, ground vehicle or obstruction address
+	CF2 CF = 2 // Fine format TIS-B message
+	CF3 CF = 3 // Coarse format TIS-B message
+	CF4 CF = 4 // TIS-B or ADS-R management message
+	CF5 CF = 5 // Fine format TIS-B message, non-ICAO address
+	CF6 CF = 6 // ADS-B rebroadcast message
+)
+
+// String representation of CF
+func (c CF) String() string {
+	switch c {
+	case CF0:
+		return "ADS-B message, non-transponder device with ICAO address"
+	case CF1:
+		return "ADS-B message, anonymous, ground vehicle or obstruction address"
+	case CF2:
+		return "Fine format TIS-B message"
+	case CF3:
+		return "Coarse format TIS-B message"
+	case CF4:
+		return "TIS-B or ADS-R management message"
+	case CF5:
+		return "Fine format TIS-B message, non-ICAO address"
+	case CF6:
+		return "ADS-B rebroadcast message"
+	default:
+		return fmt.Sprintf("Unknown value %d", c)
+	}
+}
+
 // FS is the flight status
 type FS int
 
 // Flight Status values
 const (
-	FS0 FS = 0 // No Alert, No SPI, Airborne
-	FS1 FS = 1 // No Alert, No SPI, On Ground
-	FS2 FS = 2 // Alert, No SPI, Airborne
-	FS3 FS = 3 // Alert, No SPI, On Ground
+	FS0 FS = 0 // No alert, no SPI, airborne
+	FS1 FS = 1 // No alert, no SPI, on ground
+	FS2 FS = 2 // Alert, no SPI, airborne
+	FS3 FS = 3 // Alert, no SPI, on ground
 	FS4 FS = 4 // Alert, SPI
-	FS5 FS = 5 // No Alert, SPI
+	FS5 FS = 5 // No alert, SPI
 )
 
 // String representation of FS
 func (c FS) String() string {
 	switch c {
 	case FS0:
-		return "No Alert, No SPI, Airborne"
+		return "No alert, no SPI, airborne"
 	case FS1:
-		return "No Alert, No SPI, On Ground"
+		return "No alert, no SPI, on ground"
 	case FS2:
-		return "Alert, No SPI, Airborne"
+		return "Alert, no SPI, airborne"
 	case FS3:
-		return "Alert, No SPI, On Ground"
+		return "Alert, no SPI, on ground"
 	case FS4:
 		return "Alert, SPI"
 	case FS5:
-		return "No Alert, SPI"
+		return "No alert, SPI"
 	default:
 		return fmt.Sprintf("Unknown value %d", c)
 	}
@@ -146,7 +182,7 @@ type VS int
 // Vertical Status values
 const (
 	VS0 VS = 0 // Airborne
-	VS1 VS = 1 // On Ground
+	VS1 VS = 1 // On ground
 )
 
 // String representation of VS
@@ -155,7 +191,7 @@ func (c VS) String() string {
 	case VS0:
 		return "Airborne"
 	case VS1:
-		return "On Ground"
+		return "On ground"
 	default:
 		return fmt.Sprintf("Unknown value %d", c)
 	}
@@ -251,95 +287,6 @@ func (c TC) String() string {
 	}
 }
 
-// AcCat is the extended squitter aircraft emitter category
-type AcCat string
-
-// Extended squitter aircraft emitter category values
-const (
-	A0 AcCat = "A0" // No ADS-B Emitter Category Information
-	A1 AcCat = "A1" // Light (< 15500 lbs)
-	A2 AcCat = "A2" // Small (15500 to 75000 lbs)
-	A3 AcCat = "A3" // Large (75000 to 300000 lbs)
-	A4 AcCat = "A4" // High Vortex Large (aircraft such as B-757)
-	A5 AcCat = "A5" // Heavy (> 300000 lbs)
-	A6 AcCat = "A6" // High Performance (> 5g acceleration and 400 kts)
-	A7 AcCat = "A7" // Rotorcraft
-
-	B0 AcCat = "B0" // No ADS-B Emitter Category Information
-	B1 AcCat = "B1" // Glider / sailplane
-	B2 AcCat = "B2" // Lighter-than-air
-	B3 AcCat = "B3" // Parachutist / Skydiver
-	B4 AcCat = "B4" // Ultralight / hang-glider / paraglider
-	B5 AcCat = "B5" // Reserved
-	B6 AcCat = "B6" // Unmanned Aerial Vehicle
-	B7 AcCat = "B7" // Space / Trans-atmospheric vehicle
-
-	C0 AcCat = "C0" // No ADS-B Emitter Category Information
-	C1 AcCat = "C1" // Surface Vehicle – Emergency Vehicle
-	C2 AcCat = "C2" // Surface Vehicle – Service Vehicle
-	C3 AcCat = "C3" // Point Obstacle (includes tethered balloons)
-	C4 AcCat = "C4" // Cluster Obstacle
-	C5 AcCat = "C5" // Line Obstacle
-	C6 AcCat = "C6" // Reserved
-	C7 AcCat = "C7" // Reserved
-)
-
-// String representation of AcCat
-func (c AcCat) String() string {
-	switch c {
-	case A0:
-		return "No ADS-B Emitter Category Information"
-	case A1:
-		return "Light (< 15500 lbs)"
-	case A2:
-		return "Small (15500 to 75000 lbs)"
-	case A3:
-		return "Large (75000 to 300000 lbs)"
-	case A4:
-		return "High Vortex Large (aircraft such as B-757)"
-	case A5:
-		return "Heavy (> 300000 lbs)"
-	case A6:
-		return "High Performance (> 5g acceleration and 400 kts)"
-	case A7:
-		return "Rotorcraft"
-	case B0:
-		return "No ADS-B Emitter Category Information"
-	case B1:
-		return "Glider / sailplane"
-	case B2:
-		return "Lighter-than-air"
-	case B3:
-		return "Parachutist / Skydiver"
-	case B4:
-		return "Ultralight / hang-glider / paraglider"
-	case B5:
-		return "Reserved"
-	case B6:
-		return "Unmanned Aerial Vehicle"
-	case B7:
-		return "Space / Trans-atmospheric vehicle"
-	case C0:
-		return "No ADS-B Emitter Category Information"
-	case C1:
-		return "Surface Vehicle – Emergency Vehicle"
-	case C2:
-		return "Surface Vehicle – Service Vehicle"
-	case C3:
-		return "Point Obstacle (includes tethered balloons)"
-	case C4:
-		return "Cluster Obstacle"
-	case C5:
-		return "Line Obstacle"
-	case C6:
-		return "Reserved"
-	case C7:
-		return "Reserved"
-	default:
-		return fmt.Sprintf("Unknown value %s", string(c))
-	}
-}
-
 // SS is the extended squitter surveillance status
 type SS int
 
@@ -364,5 +311,94 @@ func (c SS) String() string {
 		return "SPI"
 	default:
 		return fmt.Sprintf("Unknown value %d", c)
+	}
+}
+
+// AcCat is the extended squitter aircraft emitter category
+type AcCat string
+
+// Extended squitter aircraft emitter category values
+const (
+	A0 AcCat = "A0" // No ADS-B emitter category information
+	A1 AcCat = "A1" // Light (< 15500 lbs)
+	A2 AcCat = "A2" // Small (15500 to 75000 lbs)
+	A3 AcCat = "A3" // Large (75000 to 300000 lbs)
+	A4 AcCat = "A4" // High vortex large (aircraft such as B-757)
+	A5 AcCat = "A5" // Heavy (> 300000 lbs)
+	A6 AcCat = "A6" // High performance (> 5g acceleration and 400 kts)
+	A7 AcCat = "A7" // Rotorcraft
+
+	B0 AcCat = "B0" // No ADS-B emitter category information
+	B1 AcCat = "B1" // Glider / sailplane
+	B2 AcCat = "B2" // Lighter-than-air
+	B3 AcCat = "B3" // Parachutist / skydiver
+	B4 AcCat = "B4" // Ultralight / hang-glider / paraglider
+	B5 AcCat = "B5" // Reserved
+	B6 AcCat = "B6" // Unmanned aerial vehicle
+	B7 AcCat = "B7" // Space / trans-atmospheric vehicle
+
+	C0 AcCat = "C0" // No ADS-B emitter category information
+	C1 AcCat = "C1" // Surface vehicle – emergency vehicle
+	C2 AcCat = "C2" // Surface vehicle – service vehicle
+	C3 AcCat = "C3" // Point obstacle (includes tethered balloons)
+	C4 AcCat = "C4" // Cluster obstacle
+	C5 AcCat = "C5" // Line obstacle
+	C6 AcCat = "C6" // Reserved
+	C7 AcCat = "C7" // Reserved
+)
+
+// String representation of AcCat
+func (c AcCat) String() string {
+	switch c {
+	case A0:
+		return "No ADS-B emitter category information"
+	case A1:
+		return "Light (< 15500 lbs)"
+	case A2:
+		return "Small (15500 to 75000 lbs)"
+	case A3:
+		return "Large (75000 to 300000 lbs)"
+	case A4:
+		return "High vortex large (aircraft such as B-757)"
+	case A5:
+		return "Heavy (> 300000 lbs)"
+	case A6:
+		return "High performance (> 5g acceleration and 400 kts)"
+	case A7:
+		return "Rotorcraft"
+	case B0:
+		return "No ADS-B emitter category information"
+	case B1:
+		return "Glider / sailplane"
+	case B2:
+		return "Lighter-than-air"
+	case B3:
+		return "Parachutist / skydiver"
+	case B4:
+		return "Ultralight / hang-glider / paraglider"
+	case B5:
+		return "Reserved"
+	case B6:
+		return "Unmanned aerial vehicle"
+	case B7:
+		return "Space / trans-atmospheric vehicle"
+	case C0:
+		return "No ADS-B emitter category information"
+	case C1:
+		return "Surface vehicle – emergency vehicle"
+	case C2:
+		return "Surface vehicle – service vehicle"
+	case C3:
+		return "Point obstacle (includes tethered balloons)"
+	case C4:
+		return "Cluster obstacle"
+	case C5:
+		return "Line obstacle"
+	case C6:
+		return "Reserved"
+	case C7:
+		return "Reserved"
+	default:
+		return fmt.Sprintf("Unknown value %s", string(c))
 	}
 }
