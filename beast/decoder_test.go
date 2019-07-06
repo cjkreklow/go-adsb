@@ -44,7 +44,7 @@ func TestDecode2(t *testing.T) {
 		Msg:       "1a3216f933baf325c45da99adad95ff6",
 		ADSB:      "5da99adad95ff6",
 		Format:    2,
-		Timestamp: 2104964213144000,
+		Timestamp: 2104964213144500,
 		Signal:    196,
 	}
 	testDecoder(t, tc)
@@ -55,7 +55,7 @@ func TestDecode3(t *testing.T) {
 		Msg:       "1a3316f933bbc63ec68da99ada58b98446e703357e2417",
 		ADSB:      "8da99ada58b98446e703357e2417",
 		Format:    3,
-		Timestamp: 2104964217647000,
+		Timestamp: 2104964217648000,
 		Signal:    198,
 	}
 	testDecoder(t, tc)
@@ -74,14 +74,11 @@ func testDecoder(t *testing.T, tc *testCase) {
 		t.Fatal("unexpected error:", err)
 	}
 
-	if tc.Format != f.Format {
-		t.Errorf("Format: expected %d, received %d", tc.Format, f.Format)
+	if tc.Timestamp != f.Timestamp().Nanoseconds() {
+		t.Errorf("Timestamp: expected %d, received %d", tc.Timestamp, f.Timestamp().Nanoseconds())
 	}
-	if tc.Timestamp != f.Timestamp.Nanoseconds() {
-		t.Errorf("Timestamp: expected %d, received %d", tc.Timestamp, f.Timestamp.Nanoseconds())
-	}
-	if tc.Signal != f.Signal {
-		t.Errorf("Signal: expected %d, received %d", tc.Signal, f.Signal)
+	if tc.Signal != f.Signal() {
+		t.Errorf("Signal: expected %d, received %d", tc.Signal, f.Signal())
 	}
 	if tc.ADSB != hex.EncodeToString(f.ADSB()) {
 		t.Errorf("ADSB: expected %s, received %s", tc.ADSB, hex.EncodeToString(f.ADSB()))
