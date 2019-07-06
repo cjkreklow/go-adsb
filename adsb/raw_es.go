@@ -71,19 +71,5 @@ func (r RawMessage) ESAltitude() (uint64, error) {
 
 // Get bits from the ME field
 func (r RawMessage) esbits(n int, z int) uint64 {
-	if n > z {
-		panic("upper bound must be greater than lower bound")
-	}
-	if (z - n) > 64 {
-		panic("maximum of 64 bits exceeded")
-	}
-
-	var b uint64
-
-	for i := n; i <= z; i++ {
-		b <<= 1
-		b |= uint64(r.Bit(i + 32))
-	}
-
-	return b
+	return r.Bits(n+32, z+32)
 }

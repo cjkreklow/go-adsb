@@ -23,6 +23,7 @@
 package adsb_test
 
 import (
+	"bytes"
 	"encoding"
 	"encoding/hex"
 	"testing"
@@ -180,7 +181,7 @@ func testRawBitsNeg(t *testing.T) {
 
 	defer func() {
 		p := recover()
-		if p != "bit must be greater than 0" {
+		if p != "lower bound must be greater than 0" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
@@ -204,7 +205,7 @@ func testRawBitsZero(t *testing.T) {
 
 	defer func() {
 		p := recover()
-		if p != "bit must be greater than 0" {
+		if p != "lower bound must be greater than 0" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
@@ -228,7 +229,7 @@ func testRawBitsLarge(t *testing.T) {
 
 	defer func() {
 		p := recover()
-		if p != "bit must be within message length" {
+		if p != "upper bound must be within message length" {
 			t.Error("unexpected panic:", p)
 		}
 	}()
@@ -263,7 +264,7 @@ func testRawBitsRev(t *testing.T) {
 }
 
 func testRawBitsBig(t *testing.T) {
-	b, err := hex.DecodeString("00aabbccddeeff")
+	b, err := hex.DecodeString("00aabbccddeeff00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
@@ -458,11 +459,12 @@ func testRawDF24(t *testing.T) {
 		"AP": 0x6db1a1,
 		"DF": 0x18,
 		"KE": 0x00,
-		//"MD": 0x255448ac2a74d003547a,
 		"ND": 0x02,
 	}
+	md := []byte{0x25, 0x54, 0x48, 0xac, 0x2a, 0x74, 0xd0, 0x03, 0x54, 0x7a}
 
 	testRaw(t, "c2255448ac2a74d003547a6db1a1", results)
+	testRawMD(t, "c2255448ac2a74d003547a6db1a1", md)
 }
 
 func testRaw(t *testing.T, m string, results map[string]uint64) {
@@ -510,6 +512,41 @@ func testRaw(t *testing.T, m string, results map[string]uint64) {
 	}
 }
 
+func testRawMD(t *testing.T, m string, r []byte) {
+	msg, err := hex.DecodeString(m)
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
+
+	rm := new(adsb.RawMessage)
+	err = rm.UnmarshalBinary(msg)
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
+
+	n := "MD"
+
+	if r != nil {
+		b, err := rm.MD()
+		if err != nil {
+			t.Errorf("%s  unexpected error: %v", n, err)
+		}
+		if !bytes.Equal(r, b) {
+			t.Errorf("%s  expected: %x  received: %x", n, r, b)
+		}
+	} else {
+		b, err := rm.MD()
+		if err == nil {
+			t.Errorf("%s  expected: error  received: %v", n, err)
+		} else if err.Error() != "field not available" {
+			t.Errorf("%s  expected: field not available  received: %v", n, err)
+		}
+		if b != nil {
+			t.Errorf("%s  expected: nil  received: %v", n, b)
+		}
+	}
+}
+
 func TestRawFieldsNotLoaded(t *testing.T) {
 	rm := new(adsb.RawMessage)
 	fields := map[string]func() (uint64, error){
@@ -532,5 +569,22 @@ func TestRawFieldsNotLoaded(t *testing.T) {
 		if b != 0 {
 			t.Errorf("%s  expected: 0  received: %v", n, b)
 		}
+	}
+
+	n := "MD"
+	b, err := rm.MD()
+	if err == nil {
+		t.Errorf("%s  expected: error  received: nil", n)
+	} else if err.Error() != "data not loaded" {
+		t.Errorf("%s  expected: data not loaded  received: %v", n, err)
+	}
+	if b != nil {
+		t.Errorf("%s  expected: nil  received: %v", n, b)
+	}
+
+	n = "Parity"
+	p := rm.Parity()
+	if p != 0 {
+		t.Errorf("%s  expected: 0  received: %x", n, p)
 	}
 }

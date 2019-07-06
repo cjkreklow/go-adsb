@@ -400,6 +400,12 @@ func (r RawMessage) Bit(n int) uint8 {
 // if z is beyond the end of the message, or if the result is greater
 // than 64 bits.
 func (r RawMessage) Bits(n int, z int) uint64 {
+	if n <= 0 {
+		panic("lower bound must be greater than 0")
+	}
+	if z > r.data.Len()*8 {
+		panic("upper bound must be within message length")
+	}
 	if n > z {
 		panic("upper bound must be greater than lower bound")
 	}
@@ -407,14 +413,28 @@ func (r RawMessage) Bits(n int, z int) uint64 {
 		panic("maximum of 64 bits exceeded")
 	}
 
-	var b uint64
+	n--
+	z--
 
-	for i := n; i <= z; i++ {
-		b <<= 1
-		b |= uint64(r.Bit(i))
+	nshift := uint(n % 8)
+	zshift := 7 - uint(z%8)
+	bshift := uint(0)
+
+	var result uint64
+
+	for i := z / 8; i >= n/8; i-- {
+		var b uint8
+		if i == n/8 {
+			b = (r.data.Bytes()[i] << nshift) >> nshift
+		} else {
+			b = r.data.Bytes()[i]
+		}
+
+		result |= (uint64(b) << (bshift * 8)) >> zshift
+		bshift++
 	}
 
-	return b
+	return result
 }
 
 // Parity returns the calculated parity for the message data.
