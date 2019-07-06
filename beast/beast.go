@@ -35,19 +35,12 @@ import (
 // Frame is a Mode-S Beast format message. A Frame is safe to reuse by
 // calling UnmarshalBinary with new data.
 type Frame struct {
-	raw bytes.Buffer
-
-	Format    uint8 // 1: Mode-AC, 2: Short Mode-S, 3: Long Mode-S, 4: Status
-	Signal    uint8
-	Timestamp time.Duration
+	data bytes.Buffer
 }
 
 // UnmarshalBinary stores unescaped Beast data into the Frame.
 func (f *Frame) UnmarshalBinary(data []byte) error {
-	f.raw.Reset()
-	f.Format = 0
-	f.Signal = 0
-	f.Timestamp = 0
+	f.data.Reset()
 
 	if data[0] != 0x1a {
 		return errors.New("format identifier not found")
@@ -57,25 +50,17 @@ func (f *Frame) UnmarshalBinary(data []byte) error {
 		if len(data) != 16 {
 			return fmt.Errorf("expected 16 bytes, received %d", len(data))
 		}
-		f.raw.Write(data)
-		f.Format = 2
+		f.data.Write(data)
 	case 0x33:
 		if len(data) != 23 {
 			return fmt.Errorf("expected 23 bytes, received %d", len(data))
 		}
-		f.raw.Write(data)
-		f.Format = 3
+		f.data.Write(data)
 	case 0x31, 0x34:
 		return errors.New("format not supported")
 	default:
 		return errors.New("invalid format identifier")
 	}
-
-	f.Signal = data[8]
-	f.Timestamp = time.Microsecond *
-		time.Duration(((int64(data[2])<<40)|(int64(data[3])<<32)|
-			(int64(data[4])<<24)|(int64(data[5])<<16)|
-			(int64(data[6])<<8)|int64(data[7]))/12)
 
 	return nil
 }
@@ -84,14 +69,27 @@ func (f *Frame) UnmarshalBinary(data []byte) error {
 // returned slice remains valid until the next call to UnmarshalBinary.
 // Modifying the returned slice directly may impact future calls to
 // Bytes() or ADSB().
-func (f *Frame) Bytes() []byte {
-	return f.raw.Bytes()
+func (f Frame) Bytes() []byte {
+	return f.data.Bytes()
 }
 
 // ADSB exposes the 56- or 112-bit ADS-B data encoded in the Frame. The
 // returned slice remains valid until the next call to UnmarshalBinary.
 // Modifying the returned slice directly may impact future calls to
 // Bytes() or ADSB().
-func (f *Frame) ADSB() []byte {
-	return f.raw.Bytes()[9:]
+func (f Frame) ADSB() []byte {
+	return f.data.Bytes()[9:]
+}
+
+// Timestamp returns the MLAT timestamp as a time.Duration
+func (f Frame) Timestamp() time.Duration {
+	d := f.data.Bytes()
+	ts := int64(d[7]) | int64(d[6])<<8 | int64(d[5])<<16 |
+		int64(d[4])<<24 | int64(d[3])<<32 | int64(d[2])<<40
+
+	return time.Duration(ts * 1000 / 12).Round(time.Microsecond / 2)
+}
+
+func (f Frame) Signal() uint8 {
+	return f.data.Bytes()[8]
 }
