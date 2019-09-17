@@ -90,6 +90,7 @@ func (f Frame) Timestamp() time.Duration {
 	return time.Duration(ts * 1000 / 12).Round(time.Microsecond / 2)
 }
 
+// Signal returns the signal level.
 func (f Frame) Signal() uint8 {
 	return f.data.Bytes()[8]
 }
