@@ -22,13 +22,7 @@
 
 package adsb
 
-/*
-const (
-	errRawBadLength    rawError = "incorrect data length"
-	errRawNotLoaded    rawError = "data not loaded"
-	errRawNotAvailable rawError = "field not available"
-)
-*/
+import "fmt"
 
 // ESType returns the extended squitter type code.
 func (r RawMessage) ESType() (uint64, error) {
@@ -48,10 +42,12 @@ func (r RawMessage) ESType() (uint64, error) {
 		case 0, 1, 2, 5, 6:
 			return r.esbits(1, 5), nil
 		default:
-			return 0, errRawNotAvailable
+			return 0, fmt.Errorf("adsb: error retrieving %s from %d/%d: %w",
+				"ESType", df, cf, ErrNotAvailable)
 		}
 	default:
-		return 0, errRawNotAvailable
+		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+			"ESType", df, ErrNotAvailable)
 	}
 }
 
@@ -65,7 +61,8 @@ func (r RawMessage) ESAltitude() (uint64, error) {
 	case 0, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18:
 		return r.esbits(9, 20), nil
 	default:
-		return 0, errRawNotAvailable
+		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+			"ESAltitude", tc, ErrNotAvailable)
 	}
 }
 

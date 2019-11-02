@@ -26,6 +26,18 @@ import (
 	"fmt"
 )
 
+type adsbError string
+
+func (e adsbError) Error() string {
+	return string(e)
+}
+
+// ErrNotAvailable is used to indicate that a field is not part of the
+// specification for the message format received. Each field error wraps
+// ErrNotAvailable, making it accessible by calling
+// errors.Is(err, adsb.ErrNotAvailable).
+const ErrNotAvailable adsbError = "field not available"
+
 // DF is the downlink format of the received Mode S message
 type DF int
 

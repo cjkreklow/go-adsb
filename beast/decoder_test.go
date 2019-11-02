@@ -86,39 +86,39 @@ func testDecoder(t *testing.T, tc *testCase) {
 }
 
 func TestDecodeNull(t *testing.T) {
-	testDecoderError(t, "", "EOF")
+	testDecoderError(t, "", "beast: error reading stream: EOF")
 }
 
 func TestDecodeShort1(t *testing.T) {
-	testDecoderError(t, "1a", "EOF")
+	testDecoderError(t, "1a", "beast: error reading stream: EOF")
 }
 
 func TestDecodeShort2(t *testing.T) {
-	testDecoderError(t, "1a31", "EOF")
+	testDecoderError(t, "1a31", "beast: error reading stream: EOF")
 }
 
 func TestDecodeShort3(t *testing.T) {
-	testDecoderError(t, "1a331a", "EOF")
+	testDecoderError(t, "1a331a", "beast: error reading stream: EOF")
 }
 
 func TestDecodeShortUnescape(t *testing.T) {
-	testDecoderError(t, "1a331a1a", "EOF")
+	testDecoderError(t, "1a331a1a", "beast: error reading stream: EOF")
 }
 
 func TestDecodeBadStart(t *testing.T) {
-	testDecoderError(t, "ff00", "data stream corrupt")
+	testDecoderError(t, "ff00", "beast: data stream corrupt")
 }
 
 func TestDecodeTruncated(t *testing.T) {
-	testDecoderError(t, "1a32ffff1a33ff", "frame truncated")
+	testDecoderError(t, "1a32ffff1a33ff", "beast: frame truncated")
 }
 
 func TestDecodeUnsupported1(t *testing.T) {
-	testDecoderError(t, "1affffff", "unsupported frame type")
+	testDecoderError(t, "1affffff", "beast: unsupported frame type: ff")
 }
 
 func TestDecodeUnsupported2(t *testing.T) {
-	testDecoderError(t, "1a31ffffffffffffffffff", "format not supported")
+	testDecoderError(t, "1a31ffffffffffffffffff", "beast: format not supported: 31")
 }
 
 func testDecoderError(t *testing.T, msg string, e string) {

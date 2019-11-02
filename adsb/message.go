@@ -24,18 +24,7 @@ package adsb
 
 import (
 	"bytes"
-)
-
-type msgError string
-
-func (e msgError) Error() string {
-	return string(e)
-}
-
-const (
-	errMsgUnsupported msgError = "unsupported message format"
-	errMsgNoAltitude  msgError = "altitude not available"
-	errMsgNoPosition  msgError = "position not available"
+	"fmt"
 )
 
 // Message is an ADS-B message
@@ -75,22 +64,16 @@ func (m *Message) UnmarshalBinary(data []byte) error {
 
 // Validate that the downlink format is an expected value.
 func (m *Message) validateRaw() error {
-	switch m.df() {
+	df, err := m.raw.DF()
+	if err != nil {
+		return err
+	}
+	switch df {
 	case 0, 4, 5, 11, 16, 17, 18, 20, 21:
 		return nil
 	default:
-		return errMsgUnsupported
+		return fmt.Errorf("adsb: unsupported message format: %d", df)
 	}
-}
-
-// Simplify access to the DF value by converting errors to an unknown
-// format that will be ignored.
-func (m Message) df() int {
-	df, err := m.raw.DF()
-	if err != nil {
-		return -1
-	}
-	return int(df)
 }
 
 // Raw returns the underlying RawMessage either explicitly passed via
@@ -101,9 +84,12 @@ func (m Message) Raw() *RawMessage {
 	return m.raw
 }
 
-// ICAO returns the ICAO address as an unsigned integer. Since the ICAO
-// address is often extracted from the parity field, additional
-// validation against a list of known addresses may be warranted.
+// ICAO returns the ICAO address as an unsigned integer, or zero if the
+// ICAO address cannot be determined.
+//
+// Since the ICAO address is often extracted from the parity field,
+// additional validation against a list of known addresses may be
+// warranted.
 func (m Message) ICAO() uint64 {
 	aa, err := m.raw.AA()
 	if err != nil {
@@ -119,7 +105,11 @@ func (m Message) ICAO() uint64 {
 // Alt returns the altitude. Returns error if the altitude cannot be
 // obtained.
 func (m Message) Alt() (int64, error) {
-	switch m.df() {
+	df, err := m.raw.DF()
+	if err != nil {
+		return 0, err
+	}
+	switch df {
 	case 0, 4, 16, 20:
 		ac, err := m.raw.AC()
 		if err != nil {
@@ -133,14 +123,18 @@ func (m Message) Alt() (int64, error) {
 		}
 		return decodeAlt12(uint16(alt))
 	default:
-		return 0, errMsgNoAltitude
+		return 0, fmt.Errorf("adsb: altitude not available from message format %d", df)
 	}
 }
 
 // Call returns the callsign, or an empty string if the callsign is
 // unknown or unavailable.
 func (m Message) Call() string {
-	switch m.df() {
+	df, err := m.raw.DF()
+	if err != nil {
+		return ""
+	}
+	switch df {
 	case 17, 18:
 		tc, _ := m.raw.ESType()
 		if tc < 1 || tc > 4 {
@@ -172,7 +166,11 @@ func (m Message) Call() string {
 func (m Message) Sqk() []byte {
 	sqk := make([]byte, 0, 4)
 
-	switch m.df() {
+	df, err := m.raw.DF()
+	if err != nil {
+		return sqk
+	}
+	switch df {
 	case 5, 21:
 	default:
 		return sqk
@@ -200,14 +198,21 @@ func (m Message) Sqk() []byte {
 // CPR returns the compact position report. Returns error if the
 // altitude cannot be obtained.
 func (m Message) CPR() (*CPR, error) {
-	switch m.df() {
+	df, err := m.raw.DF()
+	if err != nil {
+		return nil, err
+	}
+	switch df {
 	case 17, 18:
-		tc, _ := m.raw.ESType()
+		tc, err := m.raw.ESType()
+		if err != nil {
+			return nil, err
+		}
 		if tc < 9 || tc > 18 {
-			return nil, errMsgNoPosition
+			return nil, fmt.Errorf("adsb: position not available from extended squitter type %d", tc)
 		}
 	default:
-		return nil, errMsgNoPosition
+		return nil, fmt.Errorf("adsb: position not available from format %d", df)
 	}
 
 	c := new(CPR)

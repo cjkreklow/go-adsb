@@ -26,6 +26,8 @@ import (
 	"bytes"
 	"encoding"
 	"encoding/hex"
+	"errors"
+	"fmt"
 	"testing"
 
 	"kreklow.us/go/go-adsb/adsb"
@@ -45,13 +47,13 @@ func testRawUnmarshalInterface(t *testing.T) {
 }
 
 func testRawUnmarshalShort(t *testing.T) {
-	errm := "incorrect data length"
+	expErr := "adsb: incorrect data length: 2 bytes"
 	m := new(adsb.RawMessage)
 	err := m.UnmarshalBinary([]byte{0xf0, 0x0f})
 	if err == nil {
 		t.Fatal("expected error, received nil")
-	} else if err.Error() != errm {
-		t.Fatalf("expected: %s ; received: %s", errm, err)
+	} else if err.Error() != expErr {
+		t.Fatalf("expected: %s ; received: %s", expErr, err)
 	}
 }
 
@@ -490,6 +492,8 @@ func testRaw(t *testing.T, m string, results map[string]uint64) {
 	}
 
 	for n, f := range funcs {
+		expErr := fmt.Sprintf(
+			"adsb: error retrieving %s from %d: field not available", n, results["DF"])
 		if r, ok := results[n]; ok {
 			b, err := f()
 			if err != nil {
@@ -502,11 +506,14 @@ func testRaw(t *testing.T, m string, results map[string]uint64) {
 			b, err := f()
 			if err == nil {
 				t.Errorf("%s  expected: error  received: %v", n, err)
-			} else if err.Error() != "field not available" {
-				t.Errorf("%s  expected: field not available  received: %v", n, err)
+			} else if err.Error() != expErr {
+				t.Errorf("%s  expected: '%s'  received: '%v'", n, expErr, err)
 			}
 			if b != 0 {
 				t.Errorf("%s  expected: 0  received: %v", n, b)
+			}
+			if !errors.Is(err, adsb.ErrNotAvailable) {
+				t.Errorf("%s  unexpected error type, not ErrNotAvailable", n)
 			}
 		}
 	}
@@ -559,12 +566,14 @@ func TestRawFieldsNotLoaded(t *testing.T) {
 		"SL": rm.SL, "UM": rm.UM, "VS": rm.VS,
 	}
 
+	expErr := "adsb: cannot retrieve DF field, no data loaded"
+
 	for n, f := range fields {
 		b, err := f()
 		if err == nil {
 			t.Errorf("%s  expected: error  received: nil", n)
-		} else if err.Error() != "data not loaded" {
-			t.Errorf("%s  expected: data not loaded  received: %v", n, err)
+		} else if err.Error() != expErr {
+			t.Errorf("%s  expected: '%s'  received: '%v'", n, expErr, err)
 		}
 		if b != 0 {
 			t.Errorf("%s  expected: 0  received: %v", n, b)
@@ -575,11 +584,11 @@ func TestRawFieldsNotLoaded(t *testing.T) {
 	b, err := rm.MD()
 	if err == nil {
 		t.Errorf("%s  expected: error  received: nil", n)
-	} else if err.Error() != "data not loaded" {
-		t.Errorf("%s  expected: data not loaded  received: %v", n, err)
+	} else if err.Error() != expErr {
+		t.Errorf("%s  expected: '%s'  received: '%v'", n, expErr, err)
 	}
 	if b != nil {
-		t.Errorf("%s  expected: nil  received: %v", n, b)
+		t.Errorf("%s  expected: nil  received: '%v'", n, b)
 	}
 
 	n = "Parity"

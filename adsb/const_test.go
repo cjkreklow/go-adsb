@@ -97,6 +97,7 @@ func testCF(t *testing.T) {
 		}
 	}
 }
+
 func testFS(t *testing.T) {
 	for val, out := range map[adsb.FS]string{
 		adsb.FS0: "FS: No alert, no SPI, airborne",

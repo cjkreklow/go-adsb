@@ -28,7 +28,7 @@ import (
 
 // decodeAlt13 converts a 13-bit altitude code field to an integer
 // altitude value in feet.  The highest three bits of the uint16
-// argument passed are ignored.
+// argument passed must be zero.
 func decodeAlt13(a uint16) (int64, error) {
 	if a&0xE000 != 0 { // data is not properly aligned
 		return 0, errors.New("invalid data length")
@@ -69,7 +69,7 @@ func decodeAlt13(a uint16) (int64, error) {
 
 // decodeAlt12 converts a 12-bit extended squitter altitude field to an
 // integer altitude value in feet.  The highest four bits of the uint16
-// argument passed are ignored.
+// argument passed must be zero.
 func decodeAlt12(a uint16) (int64, error) {
 	if a&0xF000 != 0 { // data is not properly aligned
 		return 0, errors.New("invalid data length")

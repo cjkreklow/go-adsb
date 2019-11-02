@@ -27,6 +27,7 @@ import (
 	"bytes"
 	"encoding"
 	"errors"
+	"fmt"
 	"io"
 )
 
@@ -52,17 +53,17 @@ func (d *Decoder) Decode(f encoding.BinaryUnmarshaler) error {
 
 	b, err := d.r.ReadByte()
 	if err != nil {
-		return err
+		return fmt.Errorf("beast: error reading stream: %w", err)
 	}
 	if b != 0x1a {
-		return errors.New("data stream corrupt")
+		return errors.New("beast: data stream corrupt")
 	}
 
 	d.buf.WriteByte(b)
 
 	b, err = d.r.ReadByte()
 	if err != nil {
-		return err
+		return fmt.Errorf("beast: error reading stream: %w", err)
 	}
 
 	var msglen int
@@ -75,7 +76,7 @@ func (d *Decoder) Decode(f encoding.BinaryUnmarshaler) error {
 	case 0x33:
 		msglen = 23
 	default:
-		return errors.New("unsupported frame type")
+		return fmt.Errorf("beast: unsupported frame type: %x", b)
 	}
 
 	d.buf.WriteByte(b)
@@ -83,22 +84,22 @@ func (d *Decoder) Decode(f encoding.BinaryUnmarshaler) error {
 	for j := d.buf.Len(); j < msglen; j = d.buf.Len() {
 		b, err = d.r.ReadByte()
 		if err != nil {
-			return err
+			return fmt.Errorf("beast: error reading stream: %w", err)
 		}
 
 		if b == 0x1a {
 			nb, err := d.r.Peek(1)
 			if err != nil {
-				return err
+				return fmt.Errorf("beast: error reading stream: %w", err)
 			}
 
 			if nb[0] == 0x1a {
 				_, err = d.r.Discard(1)
 				if err != nil {
-					return err
+					return fmt.Errorf("beast: error reading stream: %w", err)
 				}
 			} else {
-				return errors.New("frame truncated")
+				return errors.New("beast: frame truncated")
 			}
 		}
 		d.buf.WriteByte(b)
