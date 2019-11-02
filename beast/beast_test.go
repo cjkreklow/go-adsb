@@ -30,27 +30,27 @@ import (
 )
 
 func TestUnmarshalBadData(t *testing.T) {
-	testUnmarshalError(t, "ff0000ff", "format identifier not found")
+	testUnmarshalError(t, "ff0000ff", "beast: format identifier not found")
 }
 
 func TestUnmarshalBadLength2(t *testing.T) {
-	testUnmarshalError(t, "1a32ffff", "expected 16 bytes, received 4")
+	testUnmarshalError(t, "1a32ffff", "beast: expected 16 bytes, received 4")
 }
 
 func TestUnmarshalBadLength3(t *testing.T) {
-	testUnmarshalError(t, "1a33ffff", "expected 23 bytes, received 4")
+	testUnmarshalError(t, "1a33ffff", "beast: expected 23 bytes, received 4")
 }
 
 func TestUnmarshalType1(t *testing.T) {
-	testUnmarshalError(t, "1a31ffff", "format not supported")
+	testUnmarshalError(t, "1a31ffff", "beast: format not supported: 31")
 }
 
 func TestUnmarshalType4(t *testing.T) {
-	testUnmarshalError(t, "1a34ffff", "format not supported")
+	testUnmarshalError(t, "1a34ffff", "beast: format not supported: 34")
 }
 
 func TestUnmarshalBadType(t *testing.T) {
-	testUnmarshalError(t, "1affffff", "invalid format identifier")
+	testUnmarshalError(t, "1affffff", "beast: invalid format identifier: ff")
 }
 
 func testUnmarshalError(t *testing.T, msg string, e string) {

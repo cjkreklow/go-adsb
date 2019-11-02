@@ -46,7 +46,7 @@ func TestUnknown(t *testing.T) {
 	if err == nil {
 		t.Fatal("received nil, expected error")
 	}
-	if err.Error() != "unsupported message format" {
+	if err.Error() != "adsb: unsupported message format: 24" {
 		t.Error("received unexpected error", err)
 	}
 }

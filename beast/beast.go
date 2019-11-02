@@ -43,23 +43,23 @@ func (f *Frame) UnmarshalBinary(data []byte) error {
 	f.data.Reset()
 
 	if data[0] != 0x1a {
-		return errors.New("format identifier not found")
+		return errors.New("beast: format identifier not found")
 	}
 	switch data[1] {
 	case 0x32:
 		if len(data) != 16 {
-			return fmt.Errorf("expected 16 bytes, received %d", len(data))
+			return fmt.Errorf("beast: expected 16 bytes, received %d", len(data))
 		}
 		f.data.Write(data)
 	case 0x33:
 		if len(data) != 23 {
-			return fmt.Errorf("expected 23 bytes, received %d", len(data))
+			return fmt.Errorf("beast: expected 23 bytes, received %d", len(data))
 		}
 		f.data.Write(data)
 	case 0x31, 0x34:
-		return errors.New("format not supported")
+		return fmt.Errorf("beast: format not supported: %x", data[1])
 	default:
-		return errors.New("invalid format identifier")
+		return fmt.Errorf("beast: invalid format identifier: %x", data[1])
 	}
 
 	return nil

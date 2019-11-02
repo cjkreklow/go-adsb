@@ -103,7 +103,7 @@ func DecodeGlobalPosition(c1 *CPR, c2 *CPR) ([]float64, error) {
 
 	if c1.F == 0 {
 		t0 = false
-		lat0 = float64(c1.Lat) / 131072
+		lat0 = float64(c1.Lat) / 131072 // 2**17 = 131072
 		lon0 = float64(c1.Lon) / 131072
 		lat1 = float64(c2.Lat) / 131072
 		lon1 = float64(c2.Lon) / 131072
@@ -118,7 +118,6 @@ func DecodeGlobalPosition(c1 *CPR, c2 *CPR) ([]float64, error) {
 	dlat0 := 360.0 / 60.0
 	dlat1 := 360.0 / 59.0
 
-	// 2**17 = 131072
 	j := math.Floor(((59 * lat0) - (60 * lat1)) + 0.5)
 
 	rlat0 := dlat0 * (mod(j, 60) + lat0)
