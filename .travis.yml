@@ -6,8 +6,6 @@ env:
 
 os:
   - linux
-dist:
-  - bionic
 arch:
   - amd64
   - arm64
@@ -17,6 +15,7 @@ go:
   - 1.11.x
   - master
 
+dist: bionic
 go_import_path: kreklow.us/go/go-adsb
 script: go test -v ./...
 
@@ -32,7 +31,7 @@ jobs:
       if: |
         branch = master AND \
         type = push
-      language: minimal
+      language: shell
       install: skip
       script:
         - curl -d "repo=kreklow.us/go/go-adsb" https://goreportcard.com/checks
