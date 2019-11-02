@@ -26,9 +26,10 @@ import (
 	"bytes"
 	"encoding"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"testing"
+
+	errors "golang.org/x/xerrors"
 
 	"kreklow.us/go/go-adsb/adsb"
 )
@@ -394,11 +395,12 @@ func testRawDF16(t *testing.T) {
 
 func testRawDF17(t *testing.T) {
 	results := map[string]uint64{
-		"AA": 0xa2f111,
-		"CA": 0x05,
-		"DF": 0x11,
-		"ME": 0x581fb4842d1f59,
-		"PI": 0xeea2b7,
+		"AA":     0xa2f111,
+		"CA":     0x05,
+		"DF":     0x11,
+		"ME":     0x581fb4842d1f59,
+		"PI":     0xeea2b7,
+		"ESType": 0x0b,
 	}
 
 	testRaw(t, "8da2f111581fb4842d1f59eea2b7", results)
@@ -406,11 +408,12 @@ func testRawDF17(t *testing.T) {
 
 func testRawDF18(t *testing.T) {
 	results := map[string]uint64{
-		"AA": 0xa1ce0e,
-		"CF": 0x02,
-		"DF": 0x12,
-		"ME": 0x90b973c26a380f,
-		"PI": 0x56254c,
+		"AA":     0xa1ce0e,
+		"CF":     0x02,
+		"DF":     0x12,
+		"ME":     0x90b973c26a380f,
+		"PI":     0x56254c,
+		"ESType": 0x12,
 	}
 
 	testRaw(t, "92a1ce0e90b973c26a380f56254c", results)
@@ -454,6 +457,7 @@ func testRawDF21(t *testing.T) {
 	}
 
 	testRaw(t, "a8e9786015a68e5baedb2aba4f91", results)
+	testRawMD(t, "a8e9786015a68e5baedb2aba4f91", nil)
 }
 
 func testRawDF24(t *testing.T) {
@@ -489,6 +493,7 @@ func testRaw(t *testing.T, m string, results map[string]uint64) {
 		"MB": rm.MB, "ME": rm.ME, "MV": rm.MV,
 		"ND": rm.ND, "PI": rm.PI, "RI": rm.RI,
 		"SL": rm.SL, "UM": rm.UM, "VS": rm.VS,
+		"ESType": rm.ESType,
 	}
 
 	for n, f := range funcs {
@@ -506,14 +511,16 @@ func testRaw(t *testing.T, m string, results map[string]uint64) {
 			b, err := f()
 			if err == nil {
 				t.Errorf("%s  expected: error  received: %v", n, err)
-			} else if err.Error() != expErr {
-				t.Errorf("%s  expected: '%s'  received: '%v'", n, expErr, err)
+			} else {
+				if err.Error() != expErr {
+					t.Errorf("%s  expected: '%s'  received: '%v'", n, expErr, err)
+				}
+				if !errors.Is(err, adsb.ErrNotAvailable) {
+					t.Errorf("%s  unexpected error type, not ErrNotAvailable", n)
+				}
 			}
 			if b != 0 {
-				t.Errorf("%s  expected: 0  received: %v", n, b)
-			}
-			if !errors.Is(err, adsb.ErrNotAvailable) {
-				t.Errorf("%s  unexpected error type, not ErrNotAvailable", n)
+				t.Errorf("%s  expected: 0  received: %x", n, b)
 			}
 		}
 	}
@@ -542,11 +549,17 @@ func testRawMD(t *testing.T, m string, r []byte) {
 			t.Errorf("%s  expected: %x  received: %x", n, r, b)
 		}
 	} else {
+		df, err := rm.DF()
+		if err != nil {
+			t.Errorf("%s  unexpected error: %v", n, err)
+		}
+		expErr := fmt.Sprintf(
+			"adsb: error retrieving %s from %d: field not available", n, df)
 		b, err := rm.MD()
 		if err == nil {
 			t.Errorf("%s  expected: error  received: %v", n, err)
-		} else if err.Error() != "field not available" {
-			t.Errorf("%s  expected: field not available  received: %v", n, err)
+		} else if err.Error() != expErr {
+			t.Errorf("%s  expected: '%s'  received: '%v'", n, expErr, err)
 		}
 		if b != nil {
 			t.Errorf("%s  expected: nil  received: %v", n, b)

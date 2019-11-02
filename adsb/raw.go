@@ -24,8 +24,8 @@ package adsb
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
+
+	errors "golang.org/x/xerrors"
 )
 
 // RawMessage is a raw binary ADS-B message with helper methods for
@@ -39,7 +39,7 @@ type RawMessage struct {
 func (r *RawMessage) UnmarshalBinary(data []byte) error {
 	r.data.Reset()
 	if len(data) != 7 && len(data) != 14 {
-		return fmt.Errorf("adsb: incorrect data length: %d bytes", len(data))
+		return errors.Errorf("adsb: incorrect data length: %d bytes", len(data))
 	}
 	r.data.Write(data)
 	return nil
@@ -55,7 +55,7 @@ func (r RawMessage) AA() (uint64, error) {
 	case 11, 17, 18:
 		return r.Bits(9, 32), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"AA", df, ErrNotAvailable)
 	}
 }
@@ -70,7 +70,7 @@ func (r RawMessage) AC() (uint64, error) {
 	case 0, 4, 16, 20:
 		return r.Bits(20, 32), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"AC", df, ErrNotAvailable)
 	}
 }
@@ -85,7 +85,7 @@ func (r RawMessage) AF() (uint64, error) {
 	case 19:
 		return r.Bits(6, 8), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"AF", df, ErrNotAvailable)
 	}
 }
@@ -102,7 +102,7 @@ func (r RawMessage) AP() (uint64, error) {
 	case 16, 20, 21, 24:
 		return r.Bits(89, 112), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"AP", df, ErrNotAvailable)
 	}
 }
@@ -117,7 +117,7 @@ func (r RawMessage) CA() (uint64, error) {
 	case 11, 17:
 		return r.Bits(6, 8), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"CA", df, ErrNotAvailable)
 	}
 }
@@ -132,7 +132,7 @@ func (r RawMessage) CC() (uint64, error) {
 	case 0:
 		return r.Bits(7, 7), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"CC", df, ErrNotAvailable)
 	}
 }
@@ -147,7 +147,7 @@ func (r RawMessage) CF() (uint64, error) {
 	case 18:
 		return r.Bits(6, 8), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"CF", df, ErrNotAvailable)
 	}
 }
@@ -174,7 +174,7 @@ func (r RawMessage) DP() (uint64, error) {
 	case 20, 21:
 		return r.Bits(89, 112), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"DP", df, ErrNotAvailable)
 	}
 }
@@ -189,7 +189,7 @@ func (r RawMessage) DR() (uint64, error) {
 	case 4, 5, 20, 21:
 		return r.Bits(9, 13), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"DR", df, ErrNotAvailable)
 	}
 }
@@ -204,7 +204,7 @@ func (r RawMessage) FS() (uint64, error) {
 	case 4, 5, 20, 21:
 		return r.Bits(6, 8), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"FS", df, ErrNotAvailable)
 	}
 }
@@ -219,7 +219,7 @@ func (r RawMessage) ID() (uint64, error) {
 	case 5, 21:
 		return r.Bits(20, 32), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"ID", df, ErrNotAvailable)
 	}
 }
@@ -234,7 +234,7 @@ func (r RawMessage) KE() (uint64, error) {
 	case 24:
 		return r.Bits(4, 4), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"KE", df, ErrNotAvailable)
 	}
 }
@@ -249,7 +249,7 @@ func (r RawMessage) MB() (uint64, error) {
 	case 20, 21:
 		return r.Bits(33, 88), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"MB", df, ErrNotAvailable)
 	}
 }
@@ -264,7 +264,7 @@ func (r RawMessage) MD() ([]byte, error) {
 	case 24:
 		return r.bytes(9, 88), nil
 	default:
-		return nil, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return nil, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"MD", df, ErrNotAvailable)
 	}
 }
@@ -279,7 +279,7 @@ func (r RawMessage) ME() (uint64, error) {
 	case 17, 18:
 		return r.Bits(33, 88), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"ME", df, ErrNotAvailable)
 	}
 }
@@ -294,7 +294,7 @@ func (r RawMessage) MV() (uint64, error) {
 	case 16:
 		return r.Bits(33, 88), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"MV", df, ErrNotAvailable)
 	}
 }
@@ -309,7 +309,7 @@ func (r RawMessage) ND() (uint64, error) {
 	case 24:
 		return r.Bits(5, 8), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"ND", df, ErrNotAvailable)
 	}
 }
@@ -326,7 +326,7 @@ func (r RawMessage) PI() (uint64, error) {
 	case 17, 18:
 		return r.Bits(89, 112), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"PI", df, ErrNotAvailable)
 	}
 }
@@ -341,7 +341,7 @@ func (r RawMessage) RI() (uint64, error) {
 	case 0, 16:
 		return r.Bits(14, 17), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"RI", df, ErrNotAvailable)
 	}
 }
@@ -356,7 +356,7 @@ func (r RawMessage) SL() (uint64, error) {
 	case 0, 16:
 		return r.Bits(9, 11), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"SL", df, ErrNotAvailable)
 	}
 }
@@ -371,7 +371,7 @@ func (r RawMessage) UM() (uint64, error) {
 	case 4, 5, 20, 21:
 		return r.Bits(14, 19), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"UM", df, ErrNotAvailable)
 	}
 }
@@ -386,7 +386,7 @@ func (r RawMessage) VS() (uint64, error) {
 	case 0, 16:
 		return r.Bits(6, 6), nil
 	default:
-		return 0, fmt.Errorf("adsb: error retrieving %s from %d: %w",
+		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
 			"VS", df, ErrNotAvailable)
 	}
 }
