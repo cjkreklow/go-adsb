@@ -7,19 +7,27 @@ env:
 os:
   - linux
 dist:
-  - xenial
+  - bionic
+arch:
+  - amd64
+  - arm64
 go:
-  - 1.11.x
-  - 1.12.x
   - 1.13.x
+  - 1.12.x
+  - 1.11.x
+  - master
+
 go_import_path: kreklow.us/go/go-adsb
-script:
-  - go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
-after_success:
-  - bash <(curl -s https://codecov.io/bash)
+script: go test -v ./...
 
 jobs:
+  allow_failures:
+    - go: master
+  fast_finish: true
   include:
+    - name: "Race detector / Codecov"
+      script: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+      after_success: bash <(curl -s https://codecov.io/bash)
     - stage: refresh
       if: |
         branch = master AND \
