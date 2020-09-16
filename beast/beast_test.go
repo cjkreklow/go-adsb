@@ -1,4 +1,4 @@
-// Copyright 2019 Collin Kreklow
+// Copyright 2020 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -30,35 +30,37 @@ import (
 )
 
 func TestUnmarshalBadData(t *testing.T) {
-	testUnmarshalError(t, "ff0000ff", "beast: format identifier not found")
+	testUnmarshalError(t, "ff0000ff", "format identifier not found")
 }
 
 func TestUnmarshalBadLength2(t *testing.T) {
-	testUnmarshalError(t, "1a32ffff", "beast: expected 16 bytes, received 4")
+	testUnmarshalError(t, "1a32ffff", "expected 16 bytes, received 4")
 }
 
 func TestUnmarshalBadLength3(t *testing.T) {
-	testUnmarshalError(t, "1a33ffff", "beast: expected 23 bytes, received 4")
+	testUnmarshalError(t, "1a33ffff", "expected 23 bytes, received 4")
 }
 
 func TestUnmarshalType1(t *testing.T) {
-	testUnmarshalError(t, "1a31ffff", "beast: format not supported: 31")
+	testUnmarshalError(t, "1a31ffff", "format not supported: 31")
 }
 
 func TestUnmarshalType4(t *testing.T) {
-	testUnmarshalError(t, "1a34ffff", "beast: format not supported: 34")
+	testUnmarshalError(t, "1a34ffff", "format not supported: 34")
 }
 
 func TestUnmarshalBadType(t *testing.T) {
-	testUnmarshalError(t, "1affffff", "beast: invalid format identifier: ff")
+	testUnmarshalError(t, "1affffff", "invalid format identifier: ff")
 }
 
 func testUnmarshalError(t *testing.T, msg string, e string) {
 	f := new(beast.Frame)
+
 	b, err := hex.DecodeString(msg)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
+
 	err = f.UnmarshalBinary(b)
 	if err == nil {
 		t.Errorf("expected %s, received nil", e)
@@ -69,17 +71,22 @@ func testUnmarshalError(t *testing.T, msg string, e string) {
 
 func TestBytes(t *testing.T) {
 	m := "1a3216f933baf325c45da99adad95ff6"
+
 	b, err := hex.DecodeString(m)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
+
 	f := new(beast.Frame)
+
 	err = f.UnmarshalBinary(b)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
+
 	rb := f.Bytes()
 	rm := hex.EncodeToString(rb)
+
 	if m != rm {
 		t.Errorf("received %s, expected %s", rm, m)
 	}

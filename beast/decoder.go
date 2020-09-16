@@ -1,4 +1,4 @@
-// Copyright 2019 Collin Kreklow
+// Copyright 2020 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -27,11 +27,9 @@ import (
 	"bytes"
 	"encoding"
 	"io"
-
-	errors "golang.org/x/xerrors"
 )
 
-// Decoder reads and decodes a Beast stream
+// Decoder reads and decodes a Beast stream.
 type Decoder struct {
 	r   *bufio.Reader
 	buf bytes.Buffer
@@ -41,6 +39,7 @@ type Decoder struct {
 func NewDecoder(r io.Reader) *Decoder {
 	d := new(Decoder)
 	d.r = bufio.NewReader(r)
+
 	return d
 }
 
@@ -53,22 +52,23 @@ func (d *Decoder) Decode(f encoding.BinaryUnmarshaler) error {
 
 	b, err := d.r.ReadByte()
 	if err != nil {
-		return errors.Errorf("beast: error reading stream: %w", err)
+		return newError(err, "error reading stream")
 	}
+
 	if b != 0x1a {
-		return errors.New("beast: data stream corrupt")
+		return newError(nil, "data stream corrupt")
 	}
 
 	d.buf.WriteByte(b)
 
-	b, err = d.r.ReadByte()
+	t, err := d.r.Peek(1)
 	if err != nil {
-		return errors.Errorf("beast: error reading stream: %w", err)
+		return newError(err, "error reading stream")
 	}
 
 	var msglen int
 
-	switch b {
+	switch t[0] {
 	case 0x31:
 		msglen = 11
 	case 0x32:
@@ -76,38 +76,46 @@ func (d *Decoder) Decode(f encoding.BinaryUnmarshaler) error {
 	case 0x33:
 		msglen = 23
 	default:
-		return errors.Errorf("beast: unsupported frame type: %x", b)
+		return newErrorf(nil, "unsupported frame type: %x", t[0])
 	}
 
-	d.buf.WriteByte(b)
-
-	for j := d.buf.Len(); j < msglen; j = d.buf.Len() {
-		b, err = d.r.ReadByte()
-		if err != nil {
-			return errors.Errorf("beast: error reading stream: %w", err)
-		}
-
-		if b == 0x1a {
-			nb, err := d.r.Peek(1)
-			if err != nil {
-				return errors.Errorf("beast: error reading stream: %w", err)
-			}
-
-			if nb[0] == 0x1a {
-				_, err = d.r.Discard(1)
-				if err != nil {
-					return errors.Errorf("beast: error reading stream: %w", err)
-				}
-			} else {
-				return errors.New("beast: frame truncated")
-			}
-		}
-		d.buf.WriteByte(b)
+	err = d.readMsg(msglen)
+	if err != nil {
+		return err
 	}
 
 	err = f.UnmarshalBinary(d.buf.Bytes())
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (d *Decoder) readMsg(l int) error {
+	for j := d.buf.Len(); j < l; j = d.buf.Len() {
+		b, err := d.r.ReadByte()
+		if err != nil {
+			return newError(err, "error reading stream")
+		}
+
+		if b == 0x1a { //nolint:nestif
+			nb, err := d.r.Peek(1)
+			if err != nil {
+				return newError(err, "error reading stream")
+			}
+
+			if nb[0] == 0x1a {
+				_, err = d.r.Discard(1)
+				if err != nil {
+					return newError(err, "error reading stream")
+				}
+			} else {
+				return newError(nil, "frame truncated")
+			}
+		}
+
+		d.buf.WriteByte(b)
 	}
 
 	return nil
