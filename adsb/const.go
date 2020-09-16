@@ -1,4 +1,4 @@
-// Copyright 2019 Collin Kreklow
+// Copyright 2020 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -26,22 +26,10 @@ import (
 	"fmt"
 )
 
-type adsbError string
-
-func (e adsbError) Error() string {
-	return string(e)
-}
-
-// ErrNotAvailable is used to indicate that a field is not part of the
-// specification for the message format received. Each field error wraps
-// ErrNotAvailable, making it accessible by calling
-// errors.Is(err, adsb.ErrNotAvailable).
-const ErrNotAvailable adsbError = "field not available"
-
-// DF is the downlink format of the received Mode S message
+// DF is the downlink format of the received Mode S message.
 type DF int
 
-// Downlink Format values
+// Downlink Format values.
 const (
 	DF0  DF = 0  // Short air-air surveillance (ACAS)
 	DF4  DF = 4  // Surveillance altitude reply
@@ -57,42 +45,34 @@ const (
 	DF24 DF = 24 // Comm-D (ELM)
 )
 
-// String representation of DF
-func (c DF) String() string {
-	switch c {
-	case DF0:
-		return "Short air-air surveillance (ACAS)"
-	case DF4:
-		return "Surveillance altitude reply"
-	case DF5:
-		return "Surveillance identify reply"
-	case DF11:
-		return "All-call reply"
-	case DF16:
-		return "Long air-air surveillance (ACAS)"
-	case DF17:
-		return "Extended squitter"
-	case DF18:
-		return "Extended squitter / non-transponder"
-	case DF19:
-		return "Military extended squitter"
-	case DF20:
-		return "Comm-B altitude reply"
-	case DF21:
-		return "Comm-B identify reply"
-	case DF22:
-		return "Reserved for military use"
-	case DF24:
-		return "Comm-D (ELM)"
-	default:
-		return fmt.Sprintf("Unknown value %d", c)
-	}
+var mDF = map[DF]string{
+	DF0:  "Short air-air surveillance (ACAS)",
+	DF4:  "Surveillance altitude reply",
+	DF5:  "Surveillance identify reply",
+	DF11: "All-call reply",
+	DF16: "Long air-air surveillance (ACAS)",
+	DF17: "Extended squitter",
+	DF18: "Extended squitter / non-transponder",
+	DF19: "Military extended squitter",
+	DF20: "Comm-B altitude reply",
+	DF21: "Comm-B identify reply",
+	DF22: "Reserved for military use",
+	DF24: "Comm-D (ELM)",
 }
 
-// CA is the capability
+// String representation of DF.
+func (c DF) String() string {
+	if str, ok := mDF[c]; ok {
+		return str
+	}
+
+	return fmt.Sprintf("Unknown value %d", c)
+}
+
+// CA is the capability.
 type CA int
 
-// Capability values
+// Capability values.
 const (
 	CA0 CA = 0 // Level 1
 	CA4 CA = 4 // Level 2 - On ground
@@ -101,28 +81,27 @@ const (
 	CA7 CA = 7 // CA=7
 )
 
-// String representation of CA
-func (c CA) String() string {
-	switch c {
-	case CA0:
-		return "Level 1"
-	case CA4:
-		return "Level 2 - On ground"
-	case CA5:
-		return "Level 2 - Airborne"
-	case CA6:
-		return "Level 2"
-	case CA7:
-		return "CA=7"
-	default:
-		return fmt.Sprintf("Unknown value %d", c)
-	}
+var mCA = map[CA]string{
+	CA0: "Level 1",
+	CA4: "Level 2 - On ground",
+	CA5: "Level 2 - Airborne",
+	CA6: "Level 2",
+	CA7: "CA=7",
 }
 
-// CF is the control field
+// String representation of CA.
+func (c CA) String() string {
+	if str, ok := mCA[c]; ok {
+		return str
+	}
+
+	return fmt.Sprintf("Unknown value %d", c)
+}
+
+// CF is the control field.
 type CF int
 
-// Control Field values
+// Control Field values.
 const (
 	CF0 CF = 0 // ADS-B message, non-transponder device with ICAO address
 	CF1 CF = 1 // ADS-B message, anonymous, ground vehicle or obstruction address
@@ -133,32 +112,29 @@ const (
 	CF6 CF = 6 // ADS-B rebroadcast message
 )
 
-// String representation of CF
-func (c CF) String() string {
-	switch c {
-	case CF0:
-		return "ADS-B message, non-transponder device with ICAO address"
-	case CF1:
-		return "ADS-B message, anonymous, ground vehicle or obstruction address"
-	case CF2:
-		return "Fine format TIS-B message"
-	case CF3:
-		return "Coarse format TIS-B message"
-	case CF4:
-		return "TIS-B or ADS-R management message"
-	case CF5:
-		return "Fine format TIS-B message, non-ICAO address"
-	case CF6:
-		return "ADS-B rebroadcast message"
-	default:
-		return fmt.Sprintf("Unknown value %d", c)
-	}
+var mCF = map[CF]string{
+	CF0: "ADS-B message, non-transponder device with ICAO address",
+	CF1: "ADS-B message, anonymous, ground vehicle or obstruction address",
+	CF2: "Fine format TIS-B message",
+	CF3: "Coarse format TIS-B message",
+	CF4: "TIS-B or ADS-R management message",
+	CF5: "Fine format TIS-B message, non-ICAO address",
+	CF6: "ADS-B rebroadcast message",
 }
 
-// FS is the flight status
+// String representation of CF.
+func (c CF) String() string {
+	if str, ok := mCF[c]; ok {
+		return str
+	}
+
+	return fmt.Sprintf("Unknown value %d", c)
+}
+
+// FS is the flight status.
 type FS int
 
-// Flight Status values
+// Flight Status values.
 const (
 	FS0 FS = 0 // No alert, no SPI, airborne
 	FS1 FS = 1 // No alert, no SPI, on ground
@@ -168,51 +144,51 @@ const (
 	FS5 FS = 5 // No alert, SPI
 )
 
-// String representation of FS
-func (c FS) String() string {
-	switch c {
-	case FS0:
-		return "No alert, no SPI, airborne"
-	case FS1:
-		return "No alert, no SPI, on ground"
-	case FS2:
-		return "Alert, no SPI, airborne"
-	case FS3:
-		return "Alert, no SPI, on ground"
-	case FS4:
-		return "Alert, SPI"
-	case FS5:
-		return "No alert, SPI"
-	default:
-		return fmt.Sprintf("Unknown value %d", c)
-	}
+var mFS = map[FS]string{
+	FS0: "No alert, no SPI, airborne",
+	FS1: "No alert, no SPI, on ground",
+	FS2: "Alert, no SPI, airborne",
+	FS3: "Alert, no SPI, on ground",
+	FS4: "Alert, SPI",
+	FS5: "No alert, SPI",
 }
 
-// VS is the vertical status
+// String representation of FS.
+func (c FS) String() string {
+	if str, ok := mFS[c]; ok {
+		return str
+	}
+
+	return fmt.Sprintf("Unknown value %d", c)
+}
+
+// VS is the vertical status.
 type VS int
 
-// Vertical Status values
+// Vertical Status values.
 const (
 	VS0 VS = 0 // Airborne
 	VS1 VS = 1 // On ground
 )
 
-// String representation of VS
-func (c VS) String() string {
-	switch c {
-	case VS0:
-		return "Airborne"
-	case VS1:
-		return "On ground"
-	default:
-		return fmt.Sprintf("Unknown value %d", c)
-	}
+var mVS = map[VS]string{
+	VS0: "Airborne",
+	VS1: "On ground",
 }
 
-// TC is the extended squitter type
+// String representation of VS.
+func (c VS) String() string {
+	if str, ok := mVS[c]; ok {
+		return str
+	}
+
+	return fmt.Sprintf("Unknown value %d", c)
+}
+
+// TC is the extended squitter type.
 type TC int
 
-// Extended squitter type values
+// Extended squitter type values.
 const (
 	TC0  TC = 0  // No position information
 	TC1  TC = 1  // Identification (Category Set D)
@@ -241,68 +217,47 @@ const (
 	TC31 TC = 31 // Operational status
 )
 
-// String representation of TC
-func (c TC) String() string {
-	switch c {
-	case TC0:
-		return "No position information"
-	case TC1:
-		return "Identification (Category Set D)"
-	case TC2:
-		return "Identification (Category Set C)"
-	case TC3:
-		return "Identification (Category Set B)"
-	case TC4:
-		return "Identification (Category Set A)"
-	case TC5:
-		return "Surface position, 7.5 meter"
-	case TC6:
-		return "Surface position, 25 meter"
-	case TC7:
-		return "Surface position, 0.1 NM"
-	case TC8:
-		return "Surface position"
-	case TC9:
-		return "Airborne position, 7.5 meter, barometric altitude"
-	case TC10:
-		return "Airborne position, 25 meter, barometric altitude"
-	case TC11:
-		return "Airborne position, 0.1 NM, barometric altitude"
-	case TC12:
-		return "Airborne position, 0.2 NM, barometric altitude"
-	case TC13:
-		return "Airborne position, 0.5 NM, barometric altitude"
-	case TC14:
-		return "Airborne position, 1.0 NM, barometric altitude"
-	case TC15:
-		return "Airborne position, 2.0 NM, barometric altitude"
-	case TC16:
-		return "Airborne position, 10 NM, barometric altitude"
-	case TC17:
-		return "Airborne position, 20 NM, barometric altitude"
-	case TC18:
-		return "Airborne position, barometric altitude"
-	case TC19:
-		return "Airborne velocity"
-	case TC20:
-		return "Airborne position, 7.5 meter, GNSS height"
-	case TC21:
-		return "Airborne position, 25 meter, GNSS height"
-	case TC22:
-		return "Airborne position, GNSS height"
-	case TC28:
-		return "Emergency priority status"
-	case TC31:
-		return "Operational status"
-	default:
-		return fmt.Sprintf("Unknown value %d", c)
-	}
+var mTC = map[TC]string{
+	TC0:  "No position information",
+	TC1:  "Identification (Category Set D)",
+	TC2:  "Identification (Category Set C)",
+	TC3:  "Identification (Category Set B)",
+	TC4:  "Identification (Category Set A)",
+	TC5:  "Surface position, 7.5 meter",
+	TC6:  "Surface position, 25 meter",
+	TC7:  "Surface position, 0.1 NM",
+	TC8:  "Surface position",
+	TC9:  "Airborne position, 7.5 meter, barometric altitude",
+	TC10: "Airborne position, 25 meter, barometric altitude",
+	TC11: "Airborne position, 0.1 NM, barometric altitude",
+	TC12: "Airborne position, 0.2 NM, barometric altitude",
+	TC13: "Airborne position, 0.5 NM, barometric altitude",
+	TC14: "Airborne position, 1.0 NM, barometric altitude",
+	TC15: "Airborne position, 2.0 NM, barometric altitude",
+	TC16: "Airborne position, 10 NM, barometric altitude",
+	TC17: "Airborne position, 20 NM, barometric altitude",
+	TC18: "Airborne position, barometric altitude",
+	TC19: "Airborne velocity",
+	TC20: "Airborne position, 7.5 meter, GNSS height",
+	TC21: "Airborne position, 25 meter, GNSS height",
+	TC22: "Airborne position, GNSS height",
+	TC28: "Emergency priority status",
+	TC31: "Operational status",
 }
 
-// SS is the extended squitter surveillance status
+// String representation of TC.
+func (c TC) String() string {
+	if str, ok := mTC[c]; ok {
+		return str
+	}
+
+	return fmt.Sprintf("Unknown value %d", c)
+}
+
+// SS is the extended squitter surveillance status.
 type SS int
 
-// Surveillance Status values
+// Surveillance Status values.
 const (
 	SS0 SS = 0 // No condition information
 	SS1 SS = 1 // Permanent alert (emergency)
@@ -310,26 +265,26 @@ const (
 	SS3 SS = 3 // SPI
 )
 
-// String representation of SS
-func (c SS) String() string {
-	switch c {
-	case SS0:
-		return "No condition information"
-	case SS1:
-		return "Permanent alert (emergency)"
-	case SS2:
-		return "Temporary alert (ident change)"
-	case SS3:
-		return "SPI"
-	default:
-		return fmt.Sprintf("Unknown value %d", c)
-	}
+var mSS = map[SS]string{
+	SS0: "No condition information",
+	SS1: "Permanent alert (emergency)",
+	SS2: "Temporary alert (ident change)",
+	SS3: "SPI",
 }
 
-// AcCat is the extended squitter aircraft emitter category
+// String representation of SS.
+func (c SS) String() string {
+	if str, ok := mSS[c]; ok {
+		return str
+	}
+
+	return fmt.Sprintf("Unknown value %d", c)
+}
+
+// AcCat is the extended squitter aircraft emitter category.
 type AcCat string
 
-// Extended squitter aircraft emitter category values
+// Extended squitter aircraft emitter category values.
 const (
 	A0 AcCat = "A0" // No ADS-B emitter category information
 	A1 AcCat = "A1" // Light (< 15500 lbs)
@@ -359,58 +314,38 @@ const (
 	C7 AcCat = "C7" // Reserved
 )
 
-// String representation of AcCat
+var mAcCat = map[AcCat]string{
+	A0: "No ADS-B emitter category information",
+	A1: "Light (< 15500 lbs)",
+	A2: "Small (15500 to 75000 lbs)",
+	A3: "Large (75000 to 300000 lbs)",
+	A4: "High vortex large (aircraft such as B-757)",
+	A5: "Heavy (> 300000 lbs)",
+	A6: "High performance (> 5g acceleration and 400 kts)",
+	A7: "Rotorcraft",
+	B0: "No ADS-B emitter category information",
+	B1: "Glider / sailplane",
+	B2: "Lighter-than-air",
+	B3: "Parachutist / skydiver",
+	B4: "Ultralight / hang-glider / paraglider",
+	B5: "Reserved",
+	B6: "Unmanned aerial vehicle",
+	B7: "Space / trans-atmospheric vehicle",
+	C0: "No ADS-B emitter category information",
+	C1: "Surface vehicle – emergency vehicle",
+	C2: "Surface vehicle – service vehicle",
+	C3: "Point obstacle (includes tethered balloons)",
+	C4: "Cluster obstacle",
+	C5: "Line obstacle",
+	C6: "Reserved",
+	C7: "Reserved",
+}
+
+// String representation of AcCat.
 func (c AcCat) String() string {
-	switch c {
-	case A0:
-		return "No ADS-B emitter category information"
-	case A1:
-		return "Light (< 15500 lbs)"
-	case A2:
-		return "Small (15500 to 75000 lbs)"
-	case A3:
-		return "Large (75000 to 300000 lbs)"
-	case A4:
-		return "High vortex large (aircraft such as B-757)"
-	case A5:
-		return "Heavy (> 300000 lbs)"
-	case A6:
-		return "High performance (> 5g acceleration and 400 kts)"
-	case A7:
-		return "Rotorcraft"
-	case B0:
-		return "No ADS-B emitter category information"
-	case B1:
-		return "Glider / sailplane"
-	case B2:
-		return "Lighter-than-air"
-	case B3:
-		return "Parachutist / skydiver"
-	case B4:
-		return "Ultralight / hang-glider / paraglider"
-	case B5:
-		return "Reserved"
-	case B6:
-		return "Unmanned aerial vehicle"
-	case B7:
-		return "Space / trans-atmospheric vehicle"
-	case C0:
-		return "No ADS-B emitter category information"
-	case C1:
-		return "Surface vehicle – emergency vehicle"
-	case C2:
-		return "Surface vehicle – service vehicle"
-	case C3:
-		return "Point obstacle (includes tethered balloons)"
-	case C4:
-		return "Cluster obstacle"
-	case C5:
-		return "Line obstacle"
-	case C6:
-		return "Reserved"
-	case C7:
-		return "Reserved"
-	default:
-		return fmt.Sprintf("Unknown value %s", string(c))
+	if str, ok := mAcCat[c]; ok {
+		return str
 	}
+
+	return fmt.Sprintf("Unknown value %s", string(c))
 }

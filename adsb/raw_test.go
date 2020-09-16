@@ -1,4 +1,4 @@
-// Copyright 2019 Collin Kreklow
+// Copyright 2020 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -26,10 +26,9 @@ import (
 	"bytes"
 	"encoding"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"testing"
-
-	errors "golang.org/x/xerrors"
 
 	"kreklow.us/go/go-adsb/adsb"
 )
@@ -48,8 +47,9 @@ func testRawUnmarshalInterface(t *testing.T) {
 }
 
 func testRawUnmarshalShort(t *testing.T) {
-	expErr := "adsb: incorrect data length: 2 bytes"
+	expErr := "incorrect data length: 2 bytes"
 	m := new(adsb.RawMessage)
+
 	err := m.UnmarshalBinary([]byte{0xf0, 0x0f})
 	if err == nil {
 		t.Fatal("expected error, received nil")
@@ -72,6 +72,7 @@ func testRawBitNeg(t *testing.T) {
 	}
 
 	r := new(adsb.RawMessage)
+
 	err = r.UnmarshalBinary(b)
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
@@ -83,6 +84,7 @@ func testRawBitNeg(t *testing.T) {
 			t.Error("unexpected panic:", p)
 		}
 	}()
+
 	bit := r.Bit(-10)
 	if bit != 0 {
 		t.Error("received unexpected value:", bit)
@@ -96,6 +98,7 @@ func testRawBitZero(t *testing.T) {
 	}
 
 	r := new(adsb.RawMessage)
+
 	err = r.UnmarshalBinary(b)
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
@@ -107,6 +110,7 @@ func testRawBitZero(t *testing.T) {
 			t.Error("unexpected panic:", p)
 		}
 	}()
+
 	bit := r.Bit(0)
 	if bit != 0 {
 		t.Error("received unexpected value:", bit)
@@ -120,6 +124,7 @@ func testRawBitLarge(t *testing.T) {
 	}
 
 	r := new(adsb.RawMessage)
+
 	err = r.UnmarshalBinary(b)
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
@@ -131,6 +136,7 @@ func testRawBitLarge(t *testing.T) {
 			t.Error("unexpected panic:", p)
 		}
 	}()
+
 	bit := r.Bit(99)
 	if bit != 0 {
 		t.Error("received unexpected value:", bit)
@@ -144,6 +150,7 @@ func testRawBitGood(t *testing.T) {
 	}
 
 	r := new(adsb.RawMessage)
+
 	err = r.UnmarshalBinary(b)
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
@@ -155,6 +162,7 @@ func testRawBitGood(t *testing.T) {
 			t.Error("unexpected panic:", p)
 		}
 	}()
+
 	bit := r.Bit(17)
 	if bit != 1 {
 		t.Error("received unexpected value:", bit)
@@ -177,6 +185,7 @@ func testRawBitsNeg(t *testing.T) {
 	}
 
 	r := new(adsb.RawMessage)
+
 	err = r.UnmarshalBinary(b)
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
@@ -188,6 +197,7 @@ func testRawBitsNeg(t *testing.T) {
 			t.Error("unexpected panic:", p)
 		}
 	}()
+
 	bits := r.Bits(-10, 20)
 	if bits != 0 {
 		t.Error("received unexpected value:", bits)
@@ -201,6 +211,7 @@ func testRawBitsZero(t *testing.T) {
 	}
 
 	r := new(adsb.RawMessage)
+
 	err = r.UnmarshalBinary(b)
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
@@ -212,6 +223,7 @@ func testRawBitsZero(t *testing.T) {
 			t.Error("unexpected panic:", p)
 		}
 	}()
+
 	bits := r.Bits(0, 20)
 	if bits != 0 {
 		t.Error("received unexpected value:", bits)
@@ -225,6 +237,7 @@ func testRawBitsLarge(t *testing.T) {
 	}
 
 	r := new(adsb.RawMessage)
+
 	err = r.UnmarshalBinary(b)
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
@@ -236,6 +249,7 @@ func testRawBitsLarge(t *testing.T) {
 			t.Error("unexpected panic:", p)
 		}
 	}()
+
 	bits := r.Bits(20, 80)
 	if bits != 0 {
 		t.Error("received unexpected value:", bits)
@@ -249,6 +263,7 @@ func testRawBitsRev(t *testing.T) {
 	}
 
 	r := new(adsb.RawMessage)
+
 	err = r.UnmarshalBinary(b)
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
@@ -260,6 +275,7 @@ func testRawBitsRev(t *testing.T) {
 			t.Error("unexpected panic:", p)
 		}
 	}()
+
 	bits := r.Bits(21, 20)
 	if bits != 0 {
 		t.Error("received unexpected value:", bits)
@@ -273,6 +289,7 @@ func testRawBitsBig(t *testing.T) {
 	}
 
 	r := new(adsb.RawMessage)
+
 	err = r.UnmarshalBinary(b)
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
@@ -284,6 +301,7 @@ func testRawBitsBig(t *testing.T) {
 			t.Error("unexpected panic:", p)
 		}
 	}()
+
 	bits := r.Bits(1, 70)
 	if bits != 0 {
 		t.Error("received unexpected value:", bits)
@@ -297,6 +315,7 @@ func testRawBitsGood(t *testing.T) {
 	}
 
 	r := new(adsb.RawMessage)
+
 	err = r.UnmarshalBinary(b)
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
@@ -308,6 +327,7 @@ func testRawBitsGood(t *testing.T) {
 			t.Error("unexpected panic:", p)
 		}
 	}()
+
 	bits := r.Bits(20, 30)
 	if bits != 0x06F3 {
 		t.Errorf("received unexpected value: %x", bits)
@@ -440,8 +460,8 @@ func testRawDF20(t *testing.T) {
 		"UM": 0x00,
 	}
 
+	// testRaw(t, "a52e1487466f35e5af8b4db41af0", results)
 	testRaw(t, "a000149710030a80e500005b757a", results)
-	//testRaw(t, "a52e1487466f35e5af8b4db41af0", results)
 }
 
 func testRawDF21(t *testing.T) {
@@ -480,6 +500,7 @@ func testRaw(t *testing.T, m string, results map[string]uint64) {
 	}
 
 	rm := new(adsb.RawMessage)
+
 	err = rm.UnmarshalBinary(msg)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
@@ -498,12 +519,14 @@ func testRaw(t *testing.T, m string, results map[string]uint64) {
 
 	for n, f := range funcs {
 		expErr := fmt.Sprintf(
-			"adsb: error retrieving %s from %d: field not available", n, results["DF"])
+			"error retrieving %s from %d: field not available",
+			n, results["DF"])
 		if r, ok := results[n]; ok {
 			b, err := f()
 			if err != nil {
 				t.Errorf("%s  unexpected error: %v", n, err)
 			}
+
 			if r != b {
 				t.Errorf("%s  expected: %x  received: %x", n, r, b)
 			}
@@ -533,6 +556,7 @@ func testRawMD(t *testing.T, m string, r []byte) {
 	}
 
 	rm := new(adsb.RawMessage)
+
 	err = rm.UnmarshalBinary(msg)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
@@ -545,6 +569,7 @@ func testRawMD(t *testing.T, m string, r []byte) {
 		if err != nil {
 			t.Errorf("%s  unexpected error: %v", n, err)
 		}
+
 		if !bytes.Equal(r, b) {
 			t.Errorf("%s  expected: %x  received: %x", n, r, b)
 		}
@@ -553,14 +578,16 @@ func testRawMD(t *testing.T, m string, r []byte) {
 		if err != nil {
 			t.Errorf("%s  unexpected error: %v", n, err)
 		}
+
 		expErr := fmt.Sprintf(
-			"adsb: error retrieving %s from %d: field not available", n, df)
+			"error retrieving %s from %d: field not available", n, df)
 		b, err := rm.MD()
 		if err == nil {
 			t.Errorf("%s  expected: error  received: %v", n, err)
 		} else if err.Error() != expErr {
 			t.Errorf("%s  expected: '%s'  received: '%v'", n, expErr, err)
 		}
+
 		if b != nil {
 			t.Errorf("%s  expected: nil  received: %v", n, b)
 		}
@@ -579,7 +606,7 @@ func TestRawFieldsNotLoaded(t *testing.T) {
 		"SL": rm.SL, "UM": rm.UM, "VS": rm.VS,
 	}
 
-	expErr := "adsb: cannot retrieve DF field, no data loaded"
+	expErr := "cannot retrieve DF field, no data loaded"
 
 	for n, f := range fields {
 		b, err := f()
@@ -588,23 +615,27 @@ func TestRawFieldsNotLoaded(t *testing.T) {
 		} else if err.Error() != expErr {
 			t.Errorf("%s  expected: '%s'  received: '%v'", n, expErr, err)
 		}
+
 		if b != 0 {
 			t.Errorf("%s  expected: 0  received: %v", n, b)
 		}
 	}
 
 	n := "MD"
+
 	b, err := rm.MD()
 	if err == nil {
 		t.Errorf("%s  expected: error  received: nil", n)
 	} else if err.Error() != expErr {
 		t.Errorf("%s  expected: '%s'  received: '%v'", n, expErr, err)
 	}
+
 	if b != nil {
 		t.Errorf("%s  expected: nil  received: '%v'", n, b)
 	}
 
 	n = "Parity"
+
 	p := rm.Parity()
 	if p != 0 {
 		t.Errorf("%s  expected: 0  received: %x", n, p)
