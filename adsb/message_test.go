@@ -387,7 +387,7 @@ func testDF17Ident(t *testing.T) {
 	testDecode(t, tc)
 }
 
-func testDecode(t *testing.T, tc *testCase) {
+func testDecode(t *testing.T, tc *testCase) { //nolint:funlen,gocognit
 	b, err := hex.DecodeString(tc.Msg)
 	if err != nil {
 		t.Fatal("received unexpected error", err)
@@ -445,7 +445,7 @@ func testDecode(t *testing.T, tc *testCase) {
 		t.Error("CPR: unexpected position report populated")
 	}
 
-	if tc.CPR && tc.LocalPos {
+	if tc.CPR && tc.LocalPos { //nolint:nestif
 		if cpr == nil {
 			t.Error("CPR: expected but not present")
 		} else {
@@ -471,7 +471,7 @@ func testDecode(t *testing.T, tc *testCase) {
 		}
 	}
 
-	if tc.CPR && tc.GlobalPos {
+	if tc.CPR && tc.GlobalPos { //nolint:nestif
 		if cpr == nil {
 			t.Error("CPR: expected but not present")
 		} else {

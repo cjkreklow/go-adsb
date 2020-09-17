@@ -88,7 +88,7 @@ func (c *CPR) DecodeLocal(rp []float64) ([]float64, error) {
 // The two messages must have different formats (CPR.F) and must have
 // a time difference of less than 10 seconds (3 NM distance). The
 // return value is in the format [latitude, longitude].
-func DecodeGlobalPosition(c1 *CPR, c2 *CPR) ([]float64, error) {
+func DecodeGlobalPosition(c1 *CPR, c2 *CPR) ([]float64, error) { //nolint:funlen
 	switch {
 	case c1 == nil || c2 == nil:
 		return nil, newError(nil, "incomplete arguments")
@@ -139,7 +139,7 @@ func DecodeGlobalPosition(c1 *CPR, c2 *CPR) ([]float64, error) {
 
 	coord := make([]float64, 2)
 
-	if t0 {
+	if t0 { //nolint:nestif
 		coord[0] = rlat0
 		nl = float64(cprNL(rlat0))
 
