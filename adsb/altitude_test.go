@@ -1,4 +1,4 @@
-// Copyright 2019 Collin Kreklow
+// Copyright 2020 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -20,7 +20,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package adsb
+package adsb //nolint:testpackage
 
 import (
 	"testing"
@@ -31,6 +31,7 @@ func TestAlt13(t *testing.T) {
 	if err != nil {
 		t.Errorf("received %s, expected nil", err)
 	}
+
 	if a != 1300 {
 		t.Errorf("received %d, expected 1300", a)
 	}
@@ -43,19 +44,23 @@ func TestAlt13Errors(t *testing.T) {
 	} else if err.Error() != "invalid data length" {
 		t.Errorf("received %s, expected invalid data length", err)
 	}
+
 	a, err := decodeAlt13(0x0000)
 	if err != nil {
 		t.Errorf("received %s, expected nil", err)
 	}
+
 	if a != 0 {
 		t.Errorf("received %d, expected 0", a)
 	}
+
 	_, err = decodeAlt13(0x0FFF)
 	if err == nil {
 		t.Error("received nil, expected metric altitude not supported")
 	} else if err.Error() != "metric altitude not supported" {
 		t.Errorf("received %s, expected metric altitude not supported", err)
 	}
+
 	_, err = decodeAlt13(0x1FAF)
 	if err == nil {
 		t.Error("received nil, expected invalid altitude value")
@@ -71,10 +76,12 @@ func TestAlt12Errors(t *testing.T) {
 	} else if err.Error() != "invalid data length" {
 		t.Errorf("received %s, expected invalid data length", err)
 	}
+
 	a, err := decodeAlt12(0x0000)
 	if err != nil {
 		t.Errorf("received %s, expected nil", err)
 	}
+
 	if a != 0 {
 		t.Errorf("received %d, expected 0", a)
 	}

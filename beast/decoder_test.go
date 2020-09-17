@@ -1,4 +1,4 @@
-// Copyright 2019 Collin Kreklow
+// Copyright 2020 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -25,6 +25,8 @@ package beast_test
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
+	"io"
 	"testing"
 
 	"kreklow.us/go/go-adsb/beast"
@@ -66,9 +68,11 @@ func testDecoder(t *testing.T, tc *testCase) {
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
+
 	r := bytes.NewReader(b)
 	d := beast.NewDecoder(r)
 	f := new(beast.Frame)
+
 	err = d.Decode(f)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
@@ -77,62 +81,74 @@ func testDecoder(t *testing.T, tc *testCase) {
 	if tc.Timestamp != f.Timestamp().Nanoseconds() {
 		t.Errorf("Timestamp: expected %d, received %d", tc.Timestamp, f.Timestamp().Nanoseconds())
 	}
+
 	if tc.Signal != f.Signal() {
 		t.Errorf("Signal: expected %d, received %d", tc.Signal, f.Signal())
 	}
+
 	if tc.ADSB != hex.EncodeToString(f.ADSB()) {
 		t.Errorf("ADSB: expected %s, received %s", tc.ADSB, hex.EncodeToString(f.ADSB()))
 	}
 }
 
 func TestDecodeNull(t *testing.T) {
-	testDecoderError(t, "", "beast: error reading stream: EOF")
+	testDecoderError(t, "", "error reading stream: EOF", io.EOF)
 }
 
 func TestDecodeShort1(t *testing.T) {
-	testDecoderError(t, "1a", "beast: error reading stream: EOF")
+	testDecoderError(t, "1a", "error reading stream: EOF", io.EOF)
 }
 
 func TestDecodeShort2(t *testing.T) {
-	testDecoderError(t, "1a31", "beast: error reading stream: EOF")
+	testDecoderError(t, "1a31", "error reading stream: EOF", io.EOF)
 }
 
 func TestDecodeShort3(t *testing.T) {
-	testDecoderError(t, "1a331a", "beast: error reading stream: EOF")
+	testDecoderError(t, "1a331a", "error reading stream: EOF", io.EOF)
 }
 
 func TestDecodeShortUnescape(t *testing.T) {
-	testDecoderError(t, "1a331a1a", "beast: error reading stream: EOF")
+	testDecoderError(t, "1a331a1a", "error reading stream: EOF", io.EOF)
 }
 
 func TestDecodeBadStart(t *testing.T) {
-	testDecoderError(t, "ff00", "beast: data stream corrupt")
+	testDecoderError(t, "ff00", "data stream corrupt", nil)
 }
 
 func TestDecodeTruncated(t *testing.T) {
-	testDecoderError(t, "1a32ffff1a33ff", "beast: frame truncated")
+	testDecoderError(t, "1a32ffff1a33ff", "frame truncated", nil)
 }
 
 func TestDecodeUnsupported1(t *testing.T) {
-	testDecoderError(t, "1affffff", "beast: unsupported frame type: ff")
+	testDecoderError(t, "1affffff", "unsupported frame type: ff", nil)
 }
 
 func TestDecodeUnsupported2(t *testing.T) {
-	testDecoderError(t, "1a31ffffffffffffffffff", "beast: format not supported: 31")
+	testDecoderError(t, "1a31ffffffffffffffffff", "format not supported: 31", nil)
 }
 
-func testDecoderError(t *testing.T, msg string, e string) {
+func testDecoderError(t *testing.T, msg string, str string, we error) {
 	b, err := hex.DecodeString(msg)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
+
 	r := bytes.NewReader(b)
 	d := beast.NewDecoder(r)
 	f := new(beast.Frame)
+
 	err = d.Decode(f)
 	if err == nil {
-		t.Errorf("expected %s, received nil", e)
-	} else if err.Error() != e {
-		t.Errorf("expected %s, received %s", e, err.Error())
+		t.Errorf("expected %s, received nil", str)
+
+		return
+	}
+
+	if err.Error() != str {
+		t.Errorf("expected %s, received %s", str, err.Error())
+	}
+
+	if we != nil && !errors.Is(err, we) {
+		t.Errorf("expected type %T, received type %T", we, err)
 	}
 }

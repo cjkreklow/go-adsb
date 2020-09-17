@@ -1,4 +1,4 @@
-// Copyright 2019 Collin Kreklow
+// Copyright 2020 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -22,33 +22,32 @@
 
 package adsb
 
-import (
-	"errors"
-)
-
 // decodeAlt13 converts a 13-bit altitude code field to an integer
 // altitude value in feet.  The highest three bits of the uint16
 // argument passed must be zero.
 func decodeAlt13(a uint16) (int64, error) {
 	if a&0xE000 != 0 { // data is not properly aligned
-		return 0, errors.New("invalid data length")
+		return 0, newError(nil, "invalid data length")
 	}
+
 	if a == 0 { // altitude is 0 or invalid
 		return 0, nil
 	}
+
 	if a&0x40 != 0 { // M bit designates feet vs meters
-		return 0, errors.New("metric altitude not supported")
+		return 0, newError(nil, "metric altitude not supported")
 	}
 
 	if a&0x10 == 0 { // Q bit designates 100 ft vs 25 ft increments
 		// Gillham encoding
-
 		// trailing 3 bits is 100 ft increments
 		h := grayDecode(uint64(((a >> 10) & 0x04) |
 			((a >> 9) & 0x02) | ((a >> 8) & 0x01))) // C1(20) C2(22) C4(24)
+
 		if h == 5 || h == 6 {
-			return 0, errors.New("invalid altitude value")
+			return 0, newError(nil, "invalid altitude value")
 		}
+
 		if h == 7 {
 			h = 5
 		}
@@ -57,9 +56,11 @@ func decodeAlt13(a uint16) (int64, error) {
 		f := grayDecode(uint64(((a << 5) & 0x80) | ((a << 6) & 0x40) | // D2(30) D4(32)
 			((a >> 6) & 0x20) | ((a >> 5) & 0x10) | ((a >> 4) & 0x08) | // A1(21) A2(23) A4(25)
 			((a >> 3) & 0x04) | ((a >> 2) & 0x02) | ((a >> 1) & 0x01))) // B1(27) B2(29) B4(31)
+
 		if f%2 == 1 {
 			h = 6 - h
 		}
+
 		return int64((f*500)+(h*100)) - 1300, nil
 	}
 
@@ -72,8 +73,9 @@ func decodeAlt13(a uint16) (int64, error) {
 // argument passed must be zero.
 func decodeAlt12(a uint16) (int64, error) {
 	if a&0xF000 != 0 { // data is not properly aligned
-		return 0, errors.New("invalid data length")
+		return 0, newError(nil, "invalid data length")
 	}
+
 	if a == 0 { // altitude is 0 or invalid
 		return 0, nil
 	}
@@ -85,10 +87,11 @@ func decodeAlt12(a uint16) (int64, error) {
 }
 
 // grayDecode converts a value in "reflected binary code" aka "Gray
-// code" to the standard decimal value
+// code" to the standard decimal value.
 func grayDecode(b uint64) uint64 {
 	for z := uint(32); z >= 1; z /= 2 {
 		b ^= (b >> z)
 	}
+
 	return b
 }

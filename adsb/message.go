@@ -1,4 +1,4 @@
-// Copyright 2019 Collin Kreklow
+// Copyright 2020 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -24,10 +24,9 @@ package adsb
 
 import (
 	"bytes"
-	"fmt"
 )
 
-// Message is an ADS-B message
+// Message is an ADS-B message.
 type Message struct {
 	raw *RawMessage
 }
@@ -41,6 +40,7 @@ func NewMessage(r *RawMessage) (*Message, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return m, nil
 }
 
@@ -54,6 +54,7 @@ func (m *Message) UnmarshalBinary(data []byte) error {
 	if m.raw == nil {
 		m.raw = new(RawMessage)
 	}
+
 	err := m.raw.UnmarshalBinary(data)
 	if err != nil {
 		return err
@@ -68,11 +69,12 @@ func (m *Message) validateRaw() error {
 	if err != nil {
 		return err
 	}
+
 	switch df {
 	case 0, 4, 5, 11, 16, 17, 18, 20, 21:
 		return nil
 	default:
-		return fmt.Errorf("adsb: unsupported message format: %d", df)
+		return newErrorf(nil, "unsupported message format: %d", df)
 	}
 }
 
@@ -97,8 +99,10 @@ func (m Message) ICAO() uint64 {
 		if err != nil {
 			return 0
 		}
+
 		return ap ^ m.raw.Parity()
 	}
+
 	return aa
 }
 
@@ -109,23 +113,30 @@ func (m Message) Alt() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 0, 4, 16, 20:
 		ac, err := m.raw.AC()
 		if err != nil {
 			return 0, err
 		}
+
 		return decodeAlt13(uint16(ac))
 	case 17, 18:
 		alt, err := m.raw.ESAltitude()
 		if err != nil {
 			return 0, err
 		}
+
 		return decodeAlt12(uint16(alt))
 	default:
-		return 0, fmt.Errorf("adsb: altitude not available from message format %d", df)
+		return 0, newErrorf(ErrNotAvailable,
+			"altitude not available from message format %d", df)
 	}
 }
+
+var callChars = []byte(
+	"?ABCDEFGHIJKLMNOPQRSTUVWXYZ????? ???????????????0123456789??????")
 
 // Call returns the callsign, or an empty string if the callsign is
 // unknown or unavailable.
@@ -134,6 +145,7 @@ func (m Message) Call() string {
 	if err != nil {
 		return ""
 	}
+
 	switch df {
 	case 17, 18:
 		tc, _ := m.raw.ESType()
@@ -149,16 +161,22 @@ func (m Message) Call() string {
 	}
 
 	bits := m.raw.Bits(41, 88)
-	chars := []byte("?ABCDEFGHIJKLMNOPQRSTUVWXYZ????? ???????????????0123456789??????")
 
 	call := make([]byte, 8)
 
 	var i uint
 	for i = 0; i < 8; i++ {
-		call[i] = chars[(bits>>(42-(i*6)))&0x3F]
+		call[i] = callChars[(bits>>(42-(i*6)))&0x3F]
 	}
 
 	return string(bytes.TrimRight(call, " "))
+}
+
+var sqkTbl = [][]int{
+	{25, 23, 21},
+	{31, 29, 27},
+	{24, 22, 20},
+	{32, 30, 28},
 }
 
 // Sqk returns the squawk code, or an empty slice if the squawk code is
@@ -170,22 +188,16 @@ func (m Message) Sqk() []byte {
 	if err != nil {
 		return sqk
 	}
+
 	switch df {
 	case 5, 21:
 	default:
 		return sqk
 	}
 
-	f := [][]int{
-		{25, 23, 21},
-		{31, 29, 27},
-		{24, 22, 20},
-		{32, 30, 28},
-	}
-
 	sqk = sqk[0:4]
 
-	for i, v := range f {
+	for i, v := range sqkTbl {
 		for _, x := range v {
 			sqk[i] <<= 1
 			sqk[i] |= m.raw.Bit(x)
@@ -202,17 +214,21 @@ func (m Message) CPR() (*CPR, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	switch df {
 	case 17, 18:
 		tc, err := m.raw.ESType()
 		if err != nil {
 			return nil, err
 		}
+
 		if tc < 9 || tc > 18 {
-			return nil, fmt.Errorf("adsb: position not available from extended squitter type %d", tc)
+			return nil, newErrorf(ErrNotAvailable,
+				"position not available from extended squitter type %d", tc)
 		}
 	default:
-		return nil, fmt.Errorf("adsb: position not available from format %d", df)
+		return nil, newErrorf(ErrNotAvailable,
+			"position not available from format %d", df)
 	}
 
 	c := new(CPR)

@@ -1,4 +1,4 @@
-// Copyright 2019 Collin Kreklow
+// Copyright 2020 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -31,22 +31,26 @@ import (
 	"kreklow.us/go/go-adsb/adsb"
 )
 
-// TestUnknown tests an unknown message format
+// TestUnknown tests an unknown message format.
 func TestUnknown(t *testing.T) {
 	raw, err := hex.DecodeString("ff0000000000ff000000000000ff")
 	if err != nil {
 		t.Fatal("received unexpected error", err)
 	}
+
 	rm := new(adsb.RawMessage)
+
 	err = rm.UnmarshalBinary(raw)
 	if err != nil {
 		t.Fatal("received unexpected error", err)
 	}
+
 	_, err = adsb.NewMessage(rm)
 	if err == nil {
 		t.Fatal("received nil, expected error")
 	}
-	if err.Error() != "adsb: unsupported message format: 24" {
+
+	if err.Error() != "unsupported message format: 24" {
 		t.Error("received unexpected error", err)
 	}
 }
@@ -78,7 +82,7 @@ type testCase struct {
 	Alt  int64
 }
 
-// TestDecode runs the test cases for message decoding
+// TestDecode runs the test cases for message decoding.
 func TestDecode(t *testing.T) {
 	t.Run("DF0", testDF0)
 	t.Run("DF4", testDF4A)
@@ -93,7 +97,7 @@ func TestDecode(t *testing.T) {
 	t.Run("DF21", testDF21)
 }
 
-// test DF0 air-to-air surveillance
+// test DF0 air-to-air surveillance.
 func testDF0(t *testing.T) {
 	tc := &testCase{
 		Msg: "02e19718e70f6c",
@@ -118,7 +122,7 @@ func testDF0(t *testing.T) {
 	testDecode(t, tc)
 }
 
-// test DF4 with 25ft altitude report
+// test DF4 with 25ft altitude report.
 func testDF4A(t *testing.T) {
 	tc := &testCase{
 		Msg: "20001910bc45e9",
@@ -143,7 +147,7 @@ func testDF4A(t *testing.T) {
 	testDecode(t, tc)
 }
 
-// test DF4 with a Gillham-encoded altitude
+// test DF4 with a Gillham-encoded altitude.
 func testDF4B(t *testing.T) {
 	tc := &testCase{
 		Msg: "2000042210fc86",
@@ -168,7 +172,7 @@ func testDF4B(t *testing.T) {
 	testDecode(t, tc)
 }
 
-// test DF5 identity reply
+// test DF5 identity reply.
 func testDF5(t *testing.T) {
 	tc := &testCase{
 		Msg: "28001b0601970d",
@@ -193,7 +197,7 @@ func testDF5(t *testing.T) {
 	testDecode(t, tc)
 }
 
-// test DF11 all call reply
+// test DF11 all call reply.
 func testDF11(t *testing.T) {
 	tc := &testCase{
 		Msg: "5dac22c54b7a07",
@@ -218,7 +222,7 @@ func testDF11(t *testing.T) {
 	testDecode(t, tc)
 }
 
-// test DF20 Comm-B altitude reply
+// test DF20 Comm-B altitude reply.
 func testDF20(t *testing.T) {
 	tc := &testCase{
 		Msg: "a0000f9820057273df8d20e2cf30",
@@ -243,7 +247,7 @@ func testDF20(t *testing.T) {
 	testDecode(t, tc)
 }
 
-// test DF21 Comm-B identity reply
+// test DF21 Comm-B identity reply.
 func testDF21(t *testing.T) {
 	tc := &testCase{
 		Msg: "ac19b29573482f6963663636022b",
@@ -268,7 +272,7 @@ func testDF21(t *testing.T) {
 	testDecode(t, tc)
 }
 
-// test DF17 extended squitter position, local decode
+// test DF17 extended squitter position, local decode.
 func testDF17PosLocal(t *testing.T) {
 	tc := &testCase{
 		Msg: "8da9450d60bde138e8638c939134",
@@ -298,7 +302,7 @@ func testDF17PosLocal(t *testing.T) {
 	testDecode(t, tc)
 }
 
-// test DF17 extended squitter position, global decode
+// test DF17 extended squitter position, global decode.
 func testDF17PosGlobal(t *testing.T) {
 	tc := &testCase{
 		Msg: "8da8028758ab0028de078689d437",
@@ -328,7 +332,7 @@ func testDF17PosGlobal(t *testing.T) {
 	testDecode(t, tc)
 }
 
-// test DF17 extended squitter position, global decode, reversed
+// test DF17 extended squitter position, global decode, reversed.
 func testDF17PosGlobalRev(t *testing.T) {
 	tc := &testCase{
 		Msg: "8dab9448589ff40a4e62a6c8b7a6",
@@ -358,7 +362,7 @@ func testDF17PosGlobalRev(t *testing.T) {
 	testDecode(t, tc)
 }
 
-// test DF17 extended squitter identity
+// test DF17 extended squitter identity.
 func testDF17Ident(t *testing.T) {
 	tc := &testCase{
 		Msg: "8dacf84e23101332cf3ca037ef13",
@@ -383,13 +387,14 @@ func testDF17Ident(t *testing.T) {
 	testDecode(t, tc)
 }
 
-func testDecode(t *testing.T, tc *testCase) {
+func testDecode(t *testing.T, tc *testCase) { //nolint:funlen,gocognit
 	b, err := hex.DecodeString(tc.Msg)
 	if err != nil {
 		t.Fatal("received unexpected error", err)
 	}
 
 	msg := new(adsb.Message)
+
 	err = msg.UnmarshalBinary(b)
 	if err != nil {
 		t.Fatal("received unexpected error", err)
@@ -421,9 +426,11 @@ func testDecode(t *testing.T, tc *testCase) {
 	if msg.ICAO() != tc.ICAO {
 		t.Errorf("ICAO: received %06x, expected %06x", msg.ICAO(), tc.ICAO)
 	}
+
 	if !bytes.Equal(msg.Sqk(), tc.Sqk) {
 		t.Errorf("Sqk: received %s, expected %s", msg.Sqk(), tc.Sqk)
 	}
+
 	if msg.Call() != tc.Call {
 		t.Errorf("Call: received %s, expected %s", msg.Call(), tc.Call)
 	}
@@ -438,7 +445,7 @@ func testDecode(t *testing.T, tc *testCase) {
 		t.Error("CPR: unexpected position report populated")
 	}
 
-	if tc.CPR && tc.LocalPos {
+	if tc.CPR && tc.LocalPos { //nolint:nestif
 		if cpr == nil {
 			t.Error("CPR: expected but not present")
 		} else {
@@ -464,7 +471,7 @@ func testDecode(t *testing.T, tc *testCase) {
 		}
 	}
 
-	if tc.CPR && tc.GlobalPos {
+	if tc.CPR && tc.GlobalPos { //nolint:nestif
 		if cpr == nil {
 			t.Error("CPR: expected but not present")
 		} else {

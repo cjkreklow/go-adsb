@@ -1,39 +1,37 @@
+version: "~> 1.0"
+
 language: go
+
+os:
+  - linux
+  - osx
+arch:
+  - amd64
+  - arm64
+go:
+  - 1.15.x
+  - 1.14.x
+  - 1.13.x
 
 env:
   global:
     - GO111MODULE=on
 
-os:
-  - linux
-arch:
-  - amd64
-  - arm64
-go:
-  - 1.13.x
-  - 1.12.x
-  - 1.11.x
-  - master
-
 dist: bionic
 go_import_path: kreklow.us/go/go-adsb
-script: go test -v ./...
+script: go test -v -race ./...
 
 jobs:
-  allow_failures:
-    - go: master
-  fast_finish: true
   include:
-    - name: "Race detector / Codecov"
+    - name: "Test Coverage"
+      stage: validate
       script: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
       after_success: bash <(curl -s https://codecov.io/bash)
-    - stage: refresh
-      if: |
-        branch = master AND \
-        type = push
+    - name: "Refresh GoDoc and Go Report Card"
+      stage: refresh
+      if: branch = master AND type = push
       language: shell
       install: skip
       script:
         - curl -d "repo=kreklow.us/go/go-adsb" https://goreportcard.com/checks
         - curl -d "path=kreklow.us/go/go-adsb" https://godoc.org/-/refresh
-      after_success: skip

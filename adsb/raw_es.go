@@ -1,4 +1,4 @@
-// Copyright 2019 Collin Kreklow
+// Copyright 2020 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -22,16 +22,13 @@
 
 package adsb
 
-import (
-	errors "golang.org/x/xerrors"
-)
-
 // ESType returns the extended squitter type code.
 func (r RawMessage) ESType() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 17:
 		return r.esbits(1, 5), nil
@@ -40,16 +37,17 @@ func (r RawMessage) ESType() (uint64, error) {
 		if err != nil {
 			return 0, err
 		}
+
 		switch cf {
 		case 0, 1, 2, 5, 6:
 			return r.esbits(1, 5), nil
 		default:
-			return 0, errors.Errorf("adsb: error retrieving %s from %d/%d: %w",
-				"ESType", df, cf, ErrNotAvailable)
+			return 0, newErrorf(ErrNotAvailable,
+				"error retrieving %s from %d/%d", "ESType", df, cf)
 		}
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"ESType", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"ESType", df)
 	}
 }
 
@@ -59,16 +57,17 @@ func (r RawMessage) ESAltitude() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch tc {
 	case 0, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18:
 		return r.esbits(9, 20), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"ESAltitude", tc, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"ESAltitude", tc)
 	}
 }
 
-// Get bits from the ME field
+// Get bits from the ME field.
 func (r RawMessage) esbits(n int, z int) uint64 {
 	return r.Bits(n+32, z+32)
 }

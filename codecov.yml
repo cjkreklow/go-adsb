@@ -1,0 +1,19 @@
+coverage:
+  precision: 2
+  round: down
+  range: "80...95"
+  status:
+    project:
+      default: false
+      adsb:
+        target: 90%
+        paths:
+          - adsb
+      beast:
+        target: 95%
+        paths:
+          - beast
+    patch:
+      default:
+        target: auto
+        threshold: 5%

@@ -1,5 +1,5 @@
 # Overview
-[![GoDoc](https://godoc.org/kreklow.us/go/go-adsb?status.svg)](https://godoc.org/kreklow.us/go/go-adsb)
+[![PkgGoDev](https://pkg.go.dev/badge/kreklow.us/go/go-adsb)](https://pkg.go.dev/kreklow.us/go/go-adsb)
 ![GitHub](https://img.shields.io/github/license/cjkreklow/go-adsb.svg)
 ![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/cjkreklow/go-adsb.svg)
 [![Build Status](https://www.travis-ci.org/cjkreklow/go-adsb.svg?branch=master)](https://www.travis-ci.org/cjkreklow/go-adsb)

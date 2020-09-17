@@ -1,4 +1,4 @@
-// Copyright 2019 Collin Kreklow
+// Copyright 2020 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -29,7 +29,7 @@ import (
 	"kreklow.us/go/go-adsb/adsb"
 )
 
-// TestConst tests string formatting of constant values
+// TestConst tests string formatting of constant values.
 func TestConst(t *testing.T) {
 	t.Run("DF", testDF)
 	t.Run("CA", testCA)

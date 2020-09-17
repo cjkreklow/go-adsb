@@ -1,4 +1,4 @@
-// Copyright 2019 Collin Kreklow
+// Copyright 2020 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -20,17 +20,51 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Package beast provides objects and methods for decoding and
-// managing raw Mode-S Beast format frames.
-//
+// Package beast provides objects and methods for decoding and managing
+// raw Mode-S Beast format frames.
 package beast
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"time"
 )
+
+// beastError is the error type for the beast library.
+type beastError struct {
+	msg  string // error message string from this library
+	werr error  // wrapped error from downstream function
+}
+
+// Error returns the string value of an error.
+func (e beastError) Error() string {
+	if e.werr == nil {
+		return e.msg
+	}
+
+	return e.msg + ": " + e.werr.Error()
+}
+
+// Unwrap returns an underlying error if applicable.
+func (e beastError) Unwrap() error {
+	return e.werr
+}
+
+// newError returns a new beastError.
+func newError(w error, m string) beastError {
+	return beastError{
+		msg:  m,
+		werr: w,
+	}
+}
+
+// newErrorf returns a new beastError with a Printf-style message.
+func newErrorf(w error, m string, v ...interface{}) beastError { //nolint:unparam
+	return beastError{
+		msg:  fmt.Sprintf(m, v...),
+		werr: w,
+	}
+}
 
 // Frame is a Mode-S Beast format message. A Frame is safe to reuse by
 // calling UnmarshalBinary with new data.
@@ -43,23 +77,26 @@ func (f *Frame) UnmarshalBinary(data []byte) error {
 	f.data.Reset()
 
 	if data[0] != 0x1a {
-		return errors.New("beast: format identifier not found")
+		return newError(nil, "format identifier not found")
 	}
+
 	switch data[1] {
 	case 0x32:
 		if len(data) != 16 {
-			return fmt.Errorf("beast: expected 16 bytes, received %d", len(data))
+			return newErrorf(nil, "expected 16 bytes, received %d", len(data))
 		}
+
 		f.data.Write(data)
 	case 0x33:
 		if len(data) != 23 {
-			return fmt.Errorf("beast: expected 23 bytes, received %d", len(data))
+			return newErrorf(nil, "expected 23 bytes, received %d", len(data))
 		}
+
 		f.data.Write(data)
 	case 0x31, 0x34:
-		return fmt.Errorf("beast: format not supported: %x", data[1])
+		return newErrorf(nil, "format not supported: %x", data[1])
 	default:
-		return fmt.Errorf("beast: invalid format identifier: %x", data[1])
+		return newErrorf(nil, "invalid format identifier: %x", data[1])
 	}
 
 	return nil
@@ -81,7 +118,7 @@ func (f Frame) ADSB() []byte {
 	return f.data.Bytes()[9:]
 }
 
-// Timestamp returns the MLAT timestamp as a time.Duration
+// Timestamp returns the MLAT timestamp as a time.Duration.
 func (f Frame) Timestamp() time.Duration {
 	d := f.data.Bytes()
 	ts := int64(d[7]) | int64(d[6])<<8 | int64(d[5])<<16 |

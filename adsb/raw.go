@@ -1,4 +1,4 @@
-// Copyright 2019 Collin Kreklow
+// Copyright 2020 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -24,8 +24,6 @@ package adsb
 
 import (
 	"bytes"
-
-	errors "golang.org/x/xerrors"
 )
 
 // RawMessage is a raw binary ADS-B message with helper methods for
@@ -38,10 +36,13 @@ type RawMessage struct {
 // the supplied data in the RawMessage.
 func (r *RawMessage) UnmarshalBinary(data []byte) error {
 	r.data.Reset()
+
 	if len(data) != 7 && len(data) != 14 {
-		return errors.Errorf("adsb: incorrect data length: %d bytes", len(data))
+		return newErrorf(nil, "incorrect data length: %d bytes", len(data))
 	}
+
 	r.data.Write(data)
+
 	return nil
 }
 
@@ -51,12 +52,13 @@ func (r RawMessage) AA() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 11, 17, 18:
 		return r.Bits(9, 32), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"AA", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"AA", df)
 	}
 }
 
@@ -66,12 +68,13 @@ func (r RawMessage) AC() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 0, 4, 16, 20:
 		return r.Bits(20, 32), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"AC", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"AC", df)
 	}
 }
 
@@ -81,12 +84,13 @@ func (r RawMessage) AF() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 19:
 		return r.Bits(6, 8), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"AF", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"AF", df)
 	}
 }
 
@@ -96,14 +100,15 @@ func (r RawMessage) AP() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 0, 4, 5:
 		return r.Bits(33, 56), nil
 	case 16, 20, 21, 24:
 		return r.Bits(89, 112), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"AP", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"AP", df)
 	}
 }
 
@@ -113,12 +118,13 @@ func (r RawMessage) CA() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 11, 17:
 		return r.Bits(6, 8), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"CA", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"CA", df)
 	}
 }
 
@@ -128,12 +134,13 @@ func (r RawMessage) CC() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 0:
 		return r.Bits(7, 7), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"CC", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"CC", df)
 	}
 }
 
@@ -143,24 +150,27 @@ func (r RawMessage) CF() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 18:
 		return r.Bits(6, 8), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"CF", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"CF", df)
 	}
 }
 
 // DF returns the Downlink Format field.
 func (r RawMessage) DF() (uint64, error) {
 	if r.data.Len() == 0 {
-		return 0, errors.New("adsb: cannot retrieve DF field, no data loaded")
+		return 0, newError(nil, "cannot retrieve DF field, no data loaded")
 	}
+
 	b := r.Bits(1, 5)
 	if b > 24 {
 		b = 24
 	}
+
 	return b, nil
 }
 
@@ -170,12 +180,13 @@ func (r RawMessage) DP() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 20, 21:
 		return r.Bits(89, 112), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"DP", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"DP", df)
 	}
 }
 
@@ -185,12 +196,13 @@ func (r RawMessage) DR() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 4, 5, 20, 21:
 		return r.Bits(9, 13), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"DR", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"DR", df)
 	}
 }
 
@@ -200,12 +212,13 @@ func (r RawMessage) FS() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 4, 5, 20, 21:
 		return r.Bits(6, 8), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"FS", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"FS", df)
 	}
 }
 
@@ -215,12 +228,13 @@ func (r RawMessage) ID() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 5, 21:
 		return r.Bits(20, 32), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"ID", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"ID", df)
 	}
 }
 
@@ -230,12 +244,13 @@ func (r RawMessage) KE() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 24:
 		return r.Bits(4, 4), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"KE", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"KE", df)
 	}
 }
 
@@ -245,12 +260,13 @@ func (r RawMessage) MB() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 20, 21:
 		return r.Bits(33, 88), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"MB", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"MB", df)
 	}
 }
 
@@ -260,12 +276,13 @@ func (r RawMessage) MD() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	switch df {
 	case 24:
 		return r.bytes(9, 88), nil
 	default:
-		return nil, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"MD", df, ErrNotAvailable)
+		return nil, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"MD", df)
 	}
 }
 
@@ -275,12 +292,13 @@ func (r RawMessage) ME() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 17, 18:
 		return r.Bits(33, 88), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"ME", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"ME", df)
 	}
 }
 
@@ -290,12 +308,13 @@ func (r RawMessage) MV() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 16:
 		return r.Bits(33, 88), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"MV", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"MV", df)
 	}
 }
 
@@ -305,12 +324,13 @@ func (r RawMessage) ND() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 24:
 		return r.Bits(5, 8), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"ND", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"ND", df)
 	}
 }
 
@@ -320,14 +340,15 @@ func (r RawMessage) PI() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 11:
 		return r.Bits(33, 56), nil
 	case 17, 18:
 		return r.Bits(89, 112), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"PI", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"PI", df)
 	}
 }
 
@@ -337,12 +358,13 @@ func (r RawMessage) RI() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 0, 16:
 		return r.Bits(14, 17), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"RI", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"RI", df)
 	}
 }
 
@@ -352,12 +374,13 @@ func (r RawMessage) SL() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 0, 16:
 		return r.Bits(9, 11), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"SL", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"SL", df)
 	}
 }
 
@@ -367,12 +390,13 @@ func (r RawMessage) UM() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 4, 5, 20, 21:
 		return r.Bits(14, 19), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"UM", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"UM", df)
 	}
 }
 
@@ -382,12 +406,13 @@ func (r RawMessage) VS() (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	switch df {
 	case 0, 16:
 		return r.Bits(6, 6), nil
 	default:
-		return 0, errors.Errorf("adsb: error retrieving %s from %d: %w",
-			"VS", df, ErrNotAvailable)
+		return 0, newErrorf(ErrNotAvailable, "error retrieving %s from %d",
+			"VS", df)
 	}
 }
 
@@ -398,6 +423,7 @@ func (r RawMessage) Bit(n int) uint8 {
 	if n <= 0 {
 		panic("bit must be greater than 0")
 	}
+
 	if n > r.data.Len()*8 {
 		panic("bit must be within message length")
 	}
@@ -415,12 +441,15 @@ func (r RawMessage) Bits(n int, z int) uint64 {
 	if n <= 0 {
 		panic("lower bound must be greater than 0")
 	}
+
 	if z > r.data.Len()*8 {
 		panic("upper bound must be within message length")
 	}
+
 	if n > z {
 		panic("upper bound must be greater than lower bound")
 	}
+
 	if (z - n) > 64 {
 		panic("maximum of 64 bits exceeded")
 	}
@@ -449,41 +478,40 @@ func (r RawMessage) Bits(n int, z int) uint64 {
 	return result
 }
 
+var pTbl = []uint64{
+	0x3935ea, 0x1c9af5, 0xf1b77e, 0x78dbbf,
+	0xc397db, 0x9e31e9, 0xb0e2f0, 0x587178,
+	0x2c38bc, 0x161c5e, 0x0b0e2f, 0xfa7d13,
+	0x82c48d, 0xbe9842, 0x5f4c21, 0xd05c14,
+	0x682e0a, 0x341705, 0xe5f186, 0x72f8c3,
+	0xc68665, 0x9cb936, 0x4e5c9b, 0xd8d449,
+	0x939020, 0x49c810, 0x24e408, 0x127204,
+	0x093902, 0x049c81, 0xfdb444, 0x7eda22,
+	0x3f6d11, 0xe04c8c, 0x702646, 0x381323,
+	0xe3f395, 0x8e03ce, 0x4701e7, 0xdc7af7,
+	0x91c77f, 0xb719bb, 0xa476d9, 0xadc168,
+	0x56e0b4, 0x2b705a, 0x15b82d, 0xf52612,
+	0x7a9309, 0xc2b380, 0x6159c0, 0x30ace0,
+	0x185670, 0x0c2b38, 0x06159c, 0x030ace,
+	0x018567, 0xff38b7, 0x80665f, 0xbfc92b,
+	0xa01e91, 0xaff54c, 0x57faa6, 0x2bfd53,
+	0xea04ad, 0x8af852, 0x457c29, 0xdd4410,
+	0x6ea208, 0x375104, 0x1ba882, 0x0dd441,
+	0xf91024, 0x7c8812, 0x3e4409, 0xe0d800,
+	0x706c00, 0x383600, 0x1c1b00, 0x0e0d80,
+	0x0706c0, 0x038360, 0x01c1b0, 0x00e0d8,
+	0x00706c, 0x003836, 0x001c1b, 0xfff409,
+	0x000000, 0x000000, 0x000000, 0x000000,
+	0x000000, 0x000000, 0x000000, 0x000000,
+	0x000000, 0x000000, 0x000000, 0x000000,
+	0x000000, 0x000000, 0x000000, 0x000000,
+	0x000000, 0x000000, 0x000000, 0x000000,
+	0x000000, 0x000000, 0x000000, 0x000000,
+}
+
 // Parity returns the calculated parity for the message data.
 func (r RawMessage) Parity() uint64 {
-	table := []uint64{
-		0x3935ea, 0x1c9af5, 0xf1b77e, 0x78dbbf,
-		0xc397db, 0x9e31e9, 0xb0e2f0, 0x587178,
-		0x2c38bc, 0x161c5e, 0x0b0e2f, 0xfa7d13,
-		0x82c48d, 0xbe9842, 0x5f4c21, 0xd05c14,
-		0x682e0a, 0x341705, 0xe5f186, 0x72f8c3,
-		0xc68665, 0x9cb936, 0x4e5c9b, 0xd8d449,
-		0x939020, 0x49c810, 0x24e408, 0x127204,
-		0x093902, 0x049c81, 0xfdb444, 0x7eda22,
-		0x3f6d11, 0xe04c8c, 0x702646, 0x381323,
-		0xe3f395, 0x8e03ce, 0x4701e7, 0xdc7af7,
-		0x91c77f, 0xb719bb, 0xa476d9, 0xadc168,
-		0x56e0b4, 0x2b705a, 0x15b82d, 0xf52612,
-		0x7a9309, 0xc2b380, 0x6159c0, 0x30ace0,
-		0x185670, 0x0c2b38, 0x06159c, 0x030ace,
-		0x018567, 0xff38b7, 0x80665f, 0xbfc92b,
-		0xa01e91, 0xaff54c, 0x57faa6, 0x2bfd53,
-		0xea04ad, 0x8af852, 0x457c29, 0xdd4410,
-		0x6ea208, 0x375104, 0x1ba882, 0x0dd441,
-		0xf91024, 0x7c8812, 0x3e4409, 0xe0d800,
-		0x706c00, 0x383600, 0x1c1b00, 0x0e0d80,
-		0x0706c0, 0x038360, 0x01c1b0, 0x00e0d8,
-		0x00706c, 0x003836, 0x001c1b, 0xfff409,
-		0x000000, 0x000000, 0x000000, 0x000000,
-		0x000000, 0x000000, 0x000000, 0x000000,
-		0x000000, 0x000000, 0x000000, 0x000000,
-		0x000000, 0x000000, 0x000000, 0x000000,
-		0x000000, 0x000000, 0x000000, 0x000000,
-		0x000000, 0x000000, 0x000000, 0x000000,
-	}
-
-	var length int
-	var offset int
+	var length, offset int
 
 	switch r.data.Len() {
 	case 7:
@@ -500,7 +528,7 @@ func (r RawMessage) Parity() uint64 {
 
 	for i := 1; i <= length; i++ {
 		if r.Bit(i) != 0 {
-			parity ^= table[i+offset-1]
+			parity ^= pTbl[i+offset-1]
 		}
 	}
 
@@ -515,15 +543,17 @@ func (r RawMessage) bytes(n int, z int) []byte {
 	bytes := make([]byte, ((z-n)/8)+1)
 
 	var bits uint8
+
 	var j int
 
 	for i := n; i <= z; i++ {
 		bits <<= 1
 		bits |= r.Bit(i)
+
 		if (z-i)%8 == 0 {
 			bytes[j] = bits
-			j++
 			bits = 0
+			j++
 		}
 	}
 
