@@ -78,16 +78,31 @@ func testDecoder(t *testing.T, tc *testCase) {
 		t.Fatal("unexpected error:", err)
 	}
 
-	if tc.Timestamp != f.Timestamp().Nanoseconds() {
-		t.Errorf("Timestamp: expected %d, received %d", tc.Timestamp, f.Timestamp().Nanoseconds())
+	ts, err := f.Timestamp()
+	if err != nil {
+		t.Fatal("unexpected error:", err)
 	}
 
-	if tc.Signal != f.Signal() {
-		t.Errorf("Signal: expected %d, received %d", tc.Signal, f.Signal())
+	if tc.Timestamp != ts.Nanoseconds() {
+		t.Errorf("Timestamp: expected %d, received %d", tc.Timestamp, ts.Nanoseconds())
 	}
 
-	if tc.ADSB != hex.EncodeToString(f.ADSB()) {
-		t.Errorf("ADSB: expected %s, received %s", tc.ADSB, hex.EncodeToString(f.ADSB()))
+	sig, err := f.Signal()
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	if tc.Signal != sig {
+		t.Errorf("Signal: expected %d, received %d", tc.Signal, sig)
+	}
+
+	adsb, err := f.MarshalADSB()
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	if tc.ADSB != hex.EncodeToString(adsb) {
+		t.Errorf("ADSB: expected %s, received %s", tc.ADSB, hex.EncodeToString(adsb))
 	}
 }
 
@@ -121,10 +136,6 @@ func TestDecodeTruncated(t *testing.T) {
 
 func TestDecodeUnsupported1(t *testing.T) {
 	testDecoderError(t, "1affffff", "unsupported frame type: ff", nil)
-}
-
-func TestDecodeUnsupported2(t *testing.T) {
-	testDecoderError(t, "1a31ffffffffffffffffff", "format not supported: 31", nil)
 }
 
 func testDecoderError(t *testing.T, msg string, str string, we error) {

@@ -99,7 +99,7 @@ func (d *Decoder) readMsg(l int) error {
 			return newError(err, "error reading stream")
 		}
 
-		if b == 0x1a { //nolint:nestif
+		if b == 0x1a { // TODO:refactor complexity
 			nb, err := d.r.Peek(1)
 			if err != nil {
 				return newError(err, "error reading stream")
