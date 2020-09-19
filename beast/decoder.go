@@ -26,97 +26,205 @@ import (
 	"bufio"
 	"bytes"
 	"encoding"
+	"errors"
 	"io"
 )
 
-// Decoder reads and decodes a Beast stream.
+// decoderReader allows mocking the bufio.Reader in Decoder.
+type decoderReader interface {
+	Buffered() int
+	Discard(int) (int, error)
+	Peek(int) ([]byte, error)
+	ReadByte() (byte, error)
+	UnreadByte() error
+}
+
+// decoderBuffer allows mocking the bytes.Buffer in Decoder.
+type decoderBuffer interface {
+	Bytes() []byte
+	Reset()
+	Write([]byte) (int, error)
+	WriteByte(byte) error
+}
+
+// Decoder reads a Beast stream and stores individual frames. It must be
+// created with NewDecoder().
 type Decoder struct {
-	r   *bufio.Reader
-	buf bytes.Buffer
+	r   decoderReader
+	buf decoderBuffer
 }
 
 // NewDecoder returns a Decoder which reads from r.
 func NewDecoder(r io.Reader) *Decoder {
 	d := new(Decoder)
 	d.r = bufio.NewReader(r)
+	d.buf = new(bytes.Buffer)
 
 	return d
 }
 
 // Decode reads the next Beast frame from the input source and stores it
-// in f. The UnmarshalBinary method of f must support unescaped Beast
-// format data. The data passed to f remains valid only until the next
-// call to Decode().
+// in f. The data passed to f remains valid only until the next call to
+// Decode().
 func (d *Decoder) Decode(f encoding.BinaryUnmarshaler) error {
-	defer d.buf.Reset()
-
-	b, err := d.r.ReadByte()
+	// make sure the stream is at the beginning of a frame
+	t, err := d.r.Peek(2)
 	if err != nil {
-		return newError(err, "error reading stream")
+		return readError(err)
 	}
 
-	if b != 0x1a {
-		return newError(nil, "data stream corrupt")
+	if !(t[0] == 0x1a &&
+		(t[1] == 0x31 || t[1] == 0x32 || t[1] == 0x33 || t[1] == 0x34)) {
+		err = d.seekNext()
+		if err != nil {
+			return err
+		}
+
+		t, err = d.r.Peek(2)
+		if err != nil {
+			return readError(err)
+		}
 	}
 
-	d.buf.WriteByte(b)
+	d.buf.Reset()
 
-	t, err := d.r.Peek(1)
+	// store the frame type escape sequence
+	_, err = d.buf.Write(t)
 	if err != nil {
-		return newError(err, "error reading stream")
+		return writeError(err)
 	}
 
-	var msglen int
-
-	switch t[0] {
-	case 0x31:
-		msglen = 11
-	case 0x32:
-		msglen = 16
-	case 0x33:
-		msglen = 23
-	default:
-		return newErrorf(nil, "unsupported frame type: %x", t[0])
-	}
-
-	err = d.readMsg(msglen)
+	_, err = d.r.Discard(2)
 	if err != nil {
+		return readError(err)
+	}
+
+	// read the remainder of the message
+	err = d.readMsg()
+	if err != nil && !errors.Is(err, io.EOF) {
 		return err
 	}
 
 	err = f.UnmarshalBinary(d.buf.Bytes())
 	if err != nil {
-		return err
+		return newError(err, "error unmarshalling data")
 	}
 
 	return nil
 }
 
-func (d *Decoder) readMsg(l int) error {
-	for j := d.buf.Len(); j < l; j = d.buf.Len() {
-		b, err := d.r.ReadByte()
-		if err != nil {
-			return newError(err, "error reading stream")
+// seekNext attempts to seek the input buffer to the next frame start
+// sequence.
+func (d *Decoder) seekNext() error {
+	b, err := d.r.Peek(d.r.Buffered())
+	if err != nil {
+		return readError(err)
+	}
+
+	var n int
+
+	for _, t := range []byte{0x31, 0x32, 0x33, 0x34} {
+		nx := bytes.Index(b, []byte{0x1a, t})
+		if n == 0 && nx > 0 || nx > 0 && nx < n {
+			n = nx
 		}
+	}
 
-		if b == 0x1a { // TODO:refactor complexity
-			nb, err := d.r.Peek(1)
-			if err != nil {
-				return newError(err, "error reading stream")
-			}
+	if n == 0 {
+		return newError(nil, "no frame data found")
+	}
 
-			if nb[0] == 0x1a {
-				_, err = d.r.Discard(1)
-				if err != nil {
-					return newError(err, "error reading stream")
-				}
-			} else {
-				return newError(nil, "frame truncated")
-			}
-		}
-
-		d.buf.WriteByte(b)
+	_, err = d.r.Discard(n)
+	if err != nil {
+		return readError(err)
 	}
 
 	return nil
+}
+
+// readMsg writes frame data to the output buffer, stripping escape
+// characters.
+func (d *Decoder) readMsg() error {
+	// limit reading to 100 bytes
+	for i := 0; i < 100; i++ {
+		b, err := d.r.ReadByte()
+		if err != nil {
+			return readError(err)
+		}
+
+		// not an escape byte
+		if b != 0x1a {
+			err = d.buf.WriteByte(b)
+			if err != nil {
+				return writeError(err)
+			}
+
+			continue
+		}
+
+		// return byte to the read buffer
+		err = d.r.UnreadByte()
+		if err != nil {
+			return readError(err)
+		}
+
+		end, err := d.checkEscape()
+		if err != nil {
+			return err
+		}
+
+		if end {
+			return nil
+		}
+	}
+
+	return newError(nil, "data stream corrupt")
+}
+
+// checkEscape strips escape characters. Returns true if the escape is a
+// frame type escape.
+func (d *Decoder) checkEscape() (bool, error) {
+	nb, err := d.r.Peek(2)
+	if err != nil {
+		return false, readError(err)
+	}
+
+	// escaped 0x1a, strip extra byte
+	if nb[0] == 0x1a && nb[1] == 0x1a {
+		err = d.buf.WriteByte(nb[0])
+		if err != nil {
+			return false, writeError(err)
+		}
+
+		_, err = d.r.Discard(2)
+		if err != nil {
+			return false, readError(err)
+		}
+
+		return false, nil
+	}
+
+	// next frame, message is complete
+	if nb[0] == 0x1a &&
+		(nb[1] == 0x31 || nb[1] == 0x32 || nb[1] == 0x33 || nb[1] == 0x34) {
+		return true, nil
+	}
+
+	return false, newError(nil, "data stream corrupt")
+}
+
+// readError returns a read error.
+func readError(w error) beastError {
+	return beastError{
+		msg:  "error reading stream",
+		werr: w,
+	}
+}
+
+// writeError returns a write error.
+func writeError(w error) beastError {
+	return beastError{
+		msg:  "error writing buffer",
+		werr: w,
+	}
 }
