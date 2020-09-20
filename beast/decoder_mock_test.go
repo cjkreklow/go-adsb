@@ -32,13 +32,17 @@ import (
 )
 
 var _ decoderReader = new(internal.MockReader)
+var _ decoderBuffer = new(internal.MockBuffer)
 
 func TestMockDecodeErrors(t *testing.T) {
 	t.Run("SeekPeekError", testSeekPeekErr)
 	t.Run("SeekDiscardError", testSeekDiscardErr)
 	t.Run("AfterSeekPeekError", testAfterSeekPeekErr)
 	t.Run("AfterSeekDiscardError", testAfterSeekDiscardErr)
+	t.Run("TypeWriteError", testTypeWriteErr)
+	t.Run("ReadWriteError", testReadWriteErr)
 	t.Run("ReadUnreadError", testReadUnreadErr)
+	t.Run("EscapeWriteError", testEscapeWriteErr)
 	t.Run("EscapeDiscardError", testEscapeDiscardErr)
 }
 
@@ -49,7 +53,9 @@ func testSeekPeekErr(t *testing.T) {
 		PeekErr:   errors.New("seek peek error"),
 	}
 
-	testMockDecoderReader(t, mr, mr.PeekErr)
+	mb := new(bytes.Buffer)
+
+	testMockDecoder(t, mr, mb, mr.PeekErr)
 }
 
 func testSeekDiscardErr(t *testing.T) {
@@ -60,7 +66,9 @@ func testSeekDiscardErr(t *testing.T) {
 		DiscardErr:   errors.New("seek discard error"),
 	}
 
-	testMockDecoderReader(t, mr, mr.DiscardErr)
+	mb := new(bytes.Buffer)
+
+	testMockDecoder(t, mr, mb, mr.DiscardErr)
 }
 
 func testAfterSeekPeekErr(t *testing.T) {
@@ -71,7 +79,9 @@ func testAfterSeekPeekErr(t *testing.T) {
 		PeekErr:      errors.New("after seek peek error"),
 	}
 
-	testMockDecoderReader(t, mr, mr.PeekErr)
+	mb := new(bytes.Buffer)
+
+	testMockDecoder(t, mr, mb, mr.PeekErr)
 }
 
 func testAfterSeekDiscardErr(t *testing.T) {
@@ -82,7 +92,42 @@ func testAfterSeekDiscardErr(t *testing.T) {
 		DiscardErr:   errors.New("after seek discard error"),
 	}
 
-	testMockDecoderReader(t, mr, mr.DiscardErr)
+	mb := new(bytes.Buffer)
+
+	testMockDecoder(t, mr, mb, mr.DiscardErr)
+}
+
+func testTypeWriteErr(t *testing.T) {
+	mr := &internal.MockReader{
+		Buf:          bytes.NewBuffer([]byte{0x1a, 0x31, 0x1a}),
+		PeekCount:    2,
+		DiscardCount: 2,
+		ReadCount:    1,
+	}
+
+	mb := &internal.MockBuffer{
+		Buf:      new(bytes.Buffer),
+		WriteErr: errors.New("type write error"),
+	}
+
+	testMockDecoder(t, mr, mb, mb.WriteErr)
+}
+
+func testReadWriteErr(t *testing.T) {
+	mr := &internal.MockReader{
+		Buf:          bytes.NewBuffer([]byte{0x1a, 0x31, 0xff}),
+		PeekCount:    2,
+		DiscardCount: 2,
+		ReadCount:    1,
+	}
+
+	mb := &internal.MockBuffer{
+		Buf:          new(bytes.Buffer),
+		WriteCount:   2,
+		WriteByteErr: errors.New("read write error"),
+	}
+
+	testMockDecoder(t, mr, mb, mb.WriteByteErr)
 }
 
 func testReadUnreadErr(t *testing.T) {
@@ -95,7 +140,27 @@ func testReadUnreadErr(t *testing.T) {
 		UnreadErr:    errors.New("read unread error"),
 	}
 
-	testMockDecoderReader(t, mr, mr.UnreadErr)
+	mb := new(bytes.Buffer)
+
+	testMockDecoder(t, mr, mb, mr.UnreadErr)
+}
+
+func testEscapeWriteErr(t *testing.T) {
+	mr := &internal.MockReader{
+		Buf:          bytes.NewBuffer([]byte{0x1a, 0x31, 0x1a, 0x1a, 0x1a}),
+		PeekCount:    4,
+		DiscardCount: 2,
+		ReadCount:    1,
+		UnreadCount:  1,
+	}
+
+	mb := &internal.MockBuffer{
+		Buf:          new(bytes.Buffer),
+		WriteCount:   2,
+		WriteByteErr: errors.New("escape write error"),
+	}
+
+	testMockDecoder(t, mr, mb, mb.WriteByteErr)
 }
 
 func testEscapeDiscardErr(t *testing.T) {
@@ -108,15 +173,17 @@ func testEscapeDiscardErr(t *testing.T) {
 		DiscardErr:   errors.New("escape discard error"),
 	}
 
-	testMockDecoderReader(t, mr, mr.DiscardErr)
+	mb := new(bytes.Buffer)
+
+	testMockDecoder(t, mr, mb, mr.DiscardErr)
 }
 
-func testMockDecoderReader(t *testing.T, mr *internal.MockReader, e error) {
+func testMockDecoder(t *testing.T, mr decoderReader, mb decoderBuffer, e error) {
 	f := new(Frame)
 	d := new(Decoder)
 
 	d.r = mr
-	d.buf = new(bytes.Buffer)
+	d.buf = mb
 
 	err := d.Decode(f)
 	if err != nil && !errors.Is(err, e) {

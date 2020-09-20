@@ -26,9 +26,12 @@ package beast
 
 import (
 	"bytes"
+	"encoding"
 	"fmt"
 	"time"
 )
+
+var _ encoding.BinaryUnmarshaler = new(Frame)
 
 // Frame is a Mode-S Beast format message. A Frame is safe to reuse by
 // calling UnmarshalBinary with new data.
