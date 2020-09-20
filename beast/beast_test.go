@@ -24,32 +24,43 @@ package beast_test
 
 import (
 	"encoding/hex"
+	"errors"
 	"testing"
+	"time"
 
 	"kreklow.us/go/go-adsb/beast"
 )
 
-func TestUnmarshalBadData(t *testing.T) {
+func TestUnmarshalError(t *testing.T) {
+	t.Run("NoFormat", testUnmarshalNoFormat)
+	t.Run("BadLength1", testUnmarshalBadLength1)
+	t.Run("BadLength2", testUnmarshalBadLength2)
+	t.Run("BadLength3", testUnmarshalBadLength3)
+	t.Run("Type4", testUnmarshalType4)
+	t.Run("BadType", testUnmarshalBadType)
+}
+
+func testUnmarshalNoFormat(t *testing.T) {
 	testUnmarshalError(t, "ff0000ff", "format identifier not found")
 }
 
-func TestUnmarshalBadLength2(t *testing.T) {
+func testUnmarshalBadLength1(t *testing.T) {
+	testUnmarshalError(t, "1a31ffff", "expected 11 bytes, received 4")
+}
+
+func testUnmarshalBadLength2(t *testing.T) {
 	testUnmarshalError(t, "1a32ffff", "expected 16 bytes, received 4")
 }
 
-func TestUnmarshalBadLength3(t *testing.T) {
+func testUnmarshalBadLength3(t *testing.T) {
 	testUnmarshalError(t, "1a33ffff", "expected 23 bytes, received 4")
 }
 
-func TestUnmarshalType1(t *testing.T) {
-	testUnmarshalError(t, "1a31ffff", "format not supported: 31")
-}
-
-func TestUnmarshalType4(t *testing.T) {
+func testUnmarshalType4(t *testing.T) {
 	testUnmarshalError(t, "1a34ffff", "format not supported: 34")
 }
 
-func TestUnmarshalBadType(t *testing.T) {
+func testUnmarshalBadType(t *testing.T) {
 	testUnmarshalError(t, "1affffff", "invalid format identifier: ff")
 }
 
@@ -66,6 +77,43 @@ func testUnmarshalError(t *testing.T, msg string, e string) {
 		t.Errorf("expected %s, received nil", e)
 	} else if err.Error() != e {
 		t.Errorf("expected %s, received %s", e, err.Error())
+	}
+}
+
+func TestNoDataError(t *testing.T) {
+	f := new(beast.Frame)
+
+	b, err := f.MarshalADSB()
+	if err == nil {
+		t.Error("expected error, received nil")
+	} else if !errors.Is(err, beast.ErrNoData) {
+		t.Fatal("unexpected error:", err)
+	}
+
+	if b != nil {
+		t.Errorf("expected nil, received %x", b)
+	}
+
+	ts, err := f.Timestamp()
+	if err == nil {
+		t.Error("expected error, received nil")
+	} else if !errors.Is(err, beast.ErrNoData) {
+		t.Fatal("unexpected error:", err)
+	}
+
+	if ts != time.Duration(0) {
+		t.Errorf("expected nil, received %s", ts)
+	}
+
+	sig, err := f.Signal()
+	if err == nil {
+		t.Error("expected error, received nil")
+	} else if !errors.Is(err, beast.ErrNoData) {
+		t.Fatal("unexpected error:", err)
+	}
+
+	if sig != 0 {
+		t.Errorf("expected nil, received %d", sig)
 	}
 }
 
