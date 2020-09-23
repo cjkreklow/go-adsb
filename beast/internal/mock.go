@@ -102,48 +102,12 @@ func (r *MockReader) UnreadByte() error {
 	return nil
 }
 
-type MockBuffer struct {
-	Buf *bytes.Buffer
-
-	WriteCount     int
-	WriteByteCount int
-
-	WriteErr     error
-	WriteByteErr error
+type MockFrame struct {
+	Buf bytes.Buffer
 }
 
-func (r *MockBuffer) Bytes() []byte {
-	return r.Buf.Bytes()
-}
-
-func (r *MockBuffer) Reset() {
-	r.Buf.Reset()
-}
-
-func (r *MockBuffer) Write(b []byte) (int, error) {
-	if len(b) > r.WriteCount {
-		if r.WriteErr != nil {
-			return 0, r.WriteErr
-		}
-
-		return 0, errors.New("unexpected error in Write")
-	}
-
-	r.WriteCount -= len(b)
-
-	return len(b), nil
-}
-
-func (r *MockBuffer) WriteByte(b byte) error {
-	if r.WriteByteCount == 0 {
-		if r.WriteByteErr != nil {
-			return r.WriteByteErr
-		}
-
-		return errors.New("unexpected error in WriteByte")
-	}
-
-	r.WriteByteCount--
+func (f *MockFrame) UnmarshalBinary(data []byte) error {
+	f.Buf.Write(data)
 
 	return nil
 }
