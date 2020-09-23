@@ -61,6 +61,7 @@ linters:
 issues:
   include:
     - EXC0002
+    - EXC0005
 
 linters-settings:
   maligned:
