@@ -25,6 +25,7 @@ package adsb_test
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"math/big"
 	"testing"
 
@@ -50,7 +51,7 @@ func TestUnknown(t *testing.T) {
 		t.Fatal("received nil, expected error")
 	}
 
-	if err.Error() != "unsupported message format: 24" {
+	if err.Error() != "downlink format 24: format unsupported" {
 		t.Error("received unexpected error", err)
 	}
 }
@@ -387,7 +388,7 @@ func testDF17Ident(t *testing.T) {
 	testDecode(t, tc)
 }
 
-func testDecode(t *testing.T, tc *testCase) { //nolint:funlen,gocognit
+func testDecode(t *testing.T, tc *testCase) { //nolint:funlen,gocognit,gocyclo
 	b, err := hex.DecodeString(tc.Msg)
 	if err != nil {
 		t.Fatal("received unexpected error", err)
@@ -423,24 +424,55 @@ func testDecode(t *testing.T, tc *testCase) { //nolint:funlen,gocognit
 			t.Errorf("AcCat: received %v, expected %v", msg.AcCat(), tc.Cat)
 		}
 	*/
-	if msg.ICAO() != tc.ICAO {
-		t.Errorf("ICAO: received %06x, expected %06x", msg.ICAO(), tc.ICAO)
+	icao, err := msg.ICAO()
+	if err != nil {
+		t.Fatal("received unexpected error", err)
 	}
 
-	if !bytes.Equal(msg.Sqk(), tc.Sqk) {
-		t.Errorf("Sqk: received %s, expected %s", msg.Sqk(), tc.Sqk)
+	if icao != tc.ICAO {
+		t.Errorf("ICAO: received %06x, expected %06x", icao, tc.ICAO)
 	}
 
-	if msg.Call() != tc.Call {
-		t.Errorf("Call: received %s, expected %s", msg.Call(), tc.Call)
+	sqk, err := msg.Sqk()
+	if err != nil {
+		if len(tc.Sqk) > 0 || len(tc.Sqk) == 0 && !errors.Is(err, adsb.ErrNotAvailable) {
+			t.Fatal("received unexpected error", err)
+		}
 	}
 
-	a, _ := msg.Alt()
+	if !bytes.Equal(sqk, tc.Sqk) {
+		t.Errorf("Sqk: received %s, expected %s", sqk, tc.Sqk)
+	}
+
+	call, err := msg.Call()
+	if err != nil {
+		if tc.Call != "" || tc.Call == "" && !errors.Is(err, adsb.ErrNotAvailable) {
+			t.Fatal("received unexpected error", err)
+		}
+	}
+
+	if call != tc.Call {
+		t.Errorf("Call: received %s, expected %s", call, tc.Call)
+	}
+
+	a, err := msg.Alt()
+	if err != nil {
+		if tc.Alt != 0 || tc.Alt == 0 && !errors.Is(err, adsb.ErrNotAvailable) {
+			t.Fatal("received unexpected error", err)
+		}
+	}
+
 	if a != tc.Alt {
 		t.Errorf("Alt: received %v, expected %v", a, tc.Alt)
 	}
 
-	cpr, _ := msg.CPR()
+	cpr, err := msg.CPR()
+	if err != nil {
+		if tc.CPR != false || tc.CPR == false && !errors.Is(err, adsb.ErrNotAvailable) {
+			t.Fatal("received unexpected error", err)
+		}
+	}
+
 	if !tc.CPR && cpr != nil {
 		t.Error("CPR: unexpected position report populated")
 	}
@@ -489,7 +521,11 @@ func testDecode(t *testing.T, tc *testCase) { //nolint:funlen,gocognit
 				t.Fatal("received unexpected error", err)
 			}
 
-			cpr2, _ := m2.CPR()
+			cpr2, err := m2.CPR()
+			if err != nil {
+				t.Fatal("received unexpected error", err)
+			}
+
 			if cpr2 == nil {
 				t.Fatal("no position decoded in Msg2")
 			}

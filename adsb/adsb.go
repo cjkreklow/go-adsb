@@ -26,6 +26,20 @@ package adsb
 
 import "fmt"
 
+// Public error variables.
+var (
+	// ErrNotAvailable is used to indicate that a field is not part of the
+	// specification for the message format received. Each field error wraps
+	// ErrNotAvailable, making it accessible by calling
+	// errors.Is(err, adsb.ErrNotAvailable).
+	ErrNotAvailable adsbError = newError(nil, "field not available")
+
+	// ErrUnsupported is returned when the Downlink Format of a message
+	// is not supported by Message. The error may be wrapped and should be
+	// checked with errors.Is().
+	ErrUnsupported adsbError = newError(nil, "format unsupported")
+)
+
 // adsbError is the error type for the adsb library.
 type adsbError struct {
 	msg  string // error message string from this library
@@ -47,7 +61,7 @@ func (e adsbError) Unwrap() error {
 }
 
 // newError returns a new adsbError.
-func newError(w error, m string) adsbError { //nolint:unparam // maintain consistency with newErrorf
+func newError(w error, m string) adsbError {
 	return adsbError{
 		msg:  m,
 		werr: w,
@@ -61,9 +75,3 @@ func newErrorf(w error, m string, v ...interface{}) adsbError {
 		werr: w,
 	}
 }
-
-// ErrNotAvailable is used to indicate that a field is not part of the
-// specification for the message format received. Each field error wraps
-// ErrNotAvailable, making it accessible by calling
-// errors.Is(err, adsb.ErrNotAvailable).
-var ErrNotAvailable adsbError = newError(nil, "field not available")
