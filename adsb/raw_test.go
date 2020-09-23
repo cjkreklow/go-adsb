@@ -548,7 +548,7 @@ func testRaw(t *testing.T, m string, results map[string]uint64) {
 			"error retrieving %s from %d: field not available",
 			n, results["DF"])
 
-		if r, ok := results[n]; ok { //nolint:nestif
+		if r, ok := results[n]; ok { //nolint:nestif // recursive testing function
 			b, err := f()
 			if err != nil {
 				t.Errorf("%s  unexpected error: %v", n, err)
@@ -591,7 +591,7 @@ func testRawMD(t *testing.T, m string, r []byte) {
 
 	n := "MD"
 
-	if r != nil { //nolint:nestif
+	if r != nil { //nolint:nestif // test chain
 		b, err := rm.MD()
 		if err != nil {
 			t.Errorf("%s  unexpected error: %v", n, err)
@@ -631,6 +631,7 @@ func TestRawFieldsNotLoaded(t *testing.T) {
 		"MB": rm.MB, "ME": rm.ME, "MV": rm.MV,
 		"ND": rm.ND, "PI": rm.PI, "RI": rm.RI,
 		"SL": rm.SL, "UM": rm.UM, "VS": rm.VS,
+		"ESType": rm.ESType, "ESAltitude": rm.ESAltitude,
 	}
 
 	expErr := "no data loaded"
