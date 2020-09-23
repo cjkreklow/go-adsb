@@ -22,29 +22,31 @@
 
 package adsb
 
-// decodeAlt13 converts a 13-bit altitude code field to an integer
-// altitude value in feet.  The highest three bits of the uint16
-// argument passed must be zero.
-func decodeAlt13(a uint16) (int64, error) {
-	if a&0xE000 != 0 { // data is not properly aligned
-		return 0, newError(nil, "invalid data length")
+// decodeAC decodes the Altitude Code field to an altitude in feet.
+//
+// The bits are interleaved as follows:
+//
+//   CACACAMBQBDBD
+//   112244 1 2244
+// 0b0000000000000
+//
+func decodeAC(a uint64) (int64, error) {
+	if a == 0 || a&0xffffffffffffe000 != 0 {
+		return 0, newError(nil, "invalid altitude data")
 	}
 
-	if a == 0 { // altitude is 0 or invalid
-		return 0, nil
-	}
-
-	if a&0x40 != 0 { // M bit designates feet vs meters
+	if a&0b0000001000000 != 0 { // M bit designates feet vs meters
 		return 0, newError(nil, "metric altitude not supported")
 	}
 
-	if a&0x10 == 0 { // Q bit designates 100 ft vs 25 ft increments
+	if a&0b0000000010000 == 0 { // Q bit designates 100 ft vs 25 ft increments
 		// Gillham encoding
-		// trailing 3 bits is 100 ft increments
-		h := grayDecode(uint64(((a >> 10) & 0x04) |
-			((a >> 9) & 0x02) | ((a >> 8) & 0x01))) // C1(20) C2(22) C4(24)
+		// 100 ft increments
+		h := grayDecode(((a & 0b1000000000000) >> 10) | // C1(20)
+			((a & 0b0010000000000) >> 9) | // C2(22)
+			((a & 0b0000100000000) >> 8)) // C4(24)
 
-		if h == 5 || h == 6 {
+		if h == 0 || h == 5 || h == 6 || h > 7 {
 			return 0, newError(nil, "invalid altitude value")
 		}
 
@@ -52,11 +54,17 @@ func decodeAlt13(a uint16) (int64, error) {
 			h = 5
 		}
 
-		// first 8 bits is 500 ft increments
-		f := grayDecode(uint64(((a << 5) & 0x80) | ((a << 6) & 0x40) | // D2(30) D4(32)
-			((a >> 6) & 0x20) | ((a >> 5) & 0x10) | ((a >> 4) & 0x08) | // A1(21) A2(23) A4(25)
-			((a >> 3) & 0x04) | ((a >> 2) & 0x02) | ((a >> 1) & 0x01))) // B1(27) B2(29) B4(31)
+		// 500 ft increments
+		f := grayDecode(((a & 0b0000000000100) << 5) | // D2(30)
+			((a & 0b0000000000001) << 6) | // D4(32)
+			((a & 0b0100000000000) >> 6) | // A1(21)
+			((a & 0b0001000000000) >> 5) | // A2(23)
+			((a & 0b0000010000000) >> 4) | // A4(25)
+			((a & 0b0000000100000) >> 3) | // B1(27)
+			((a & 0b0000000001000) >> 2) | // B2(29)
+			((a & 0b0000000000010) >> 1)) // B4(31)
 
+		// reverse 100s if 500s is even
 		if f%2 == 1 {
 			h = 6 - h
 		}
@@ -65,31 +73,30 @@ func decodeAlt13(a uint16) (int64, error) {
 	}
 
 	// must be an 11 bit altitude
-	return (int64((a&0x0F)|((a&0x20)>>1)|((a&0x1F80)>>2)) * 25) - 1000, nil
+	a = ((a & 0b1111110000000) >> 2) |
+		((a & 0b0000000100000) >> 1) |
+		(a & 0b0000000001111)
+
+	return int64(a*25) - 1000, nil
 }
 
-// decodeAlt12 converts a 12-bit extended squitter altitude field to an
-// integer altitude value in feet.  The highest four bits of the uint16
-// argument passed must be zero.
-func decodeAlt12(a uint16) (int64, error) {
-	if a&0xF000 != 0 { // data is not properly aligned
-		return 0, newError(nil, "invalid data length")
+// decodeESAlt decodes the extended squitter Altitude field to an
+// altitude feet.
+func decodeESAlt(a uint64) (int64, error) {
+	if a == 0 || a&0xfffffffffffff000 != 0 {
+		return 0, newError(nil, "invalid altitude data")
 	}
 
-	if a == 0 { // altitude is 0 or invalid
-		return 0, nil
-	}
+	// insert M bit
+	a = ((a & 0b111111000000) << 1) | (a & 0b000000111111)
 
-	// insert a ZERO M-bit
-	a = ((a & 0x0FC0) << 1) | (a & 0x3F)
-
-	return decodeAlt13(a)
+	return decodeAC(a)
 }
 
 // grayDecode converts a value in "reflected binary code" aka "Gray
-// code" to the standard decimal value.
+// code" to a decimal value.
 func grayDecode(b uint64) uint64 {
-	for z := uint(32); z >= 1; z /= 2 {
+	for z := 32; z >= 1; z /= 2 {
 		b ^= (b >> z)
 	}
 

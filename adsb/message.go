@@ -121,14 +121,14 @@ func (m Message) Alt() (int64, error) {
 			return 0, err
 		}
 
-		return decodeAlt13(uint16(ac))
+		return decodeAC(ac)
 	case 17, 18:
 		alt, err := m.raw.ESAltitude()
 		if err != nil {
 			return 0, err
 		}
 
-		return decodeAlt12(uint16(alt))
+		return decodeESAlt(alt)
 	default:
 		return 0, newErrorf(ErrNotAvailable,
 			"altitude not available from message format %d", df)
