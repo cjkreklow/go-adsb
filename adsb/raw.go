@@ -27,21 +27,34 @@ import (
 )
 
 // RawMessage is a raw binary ADS-B message with helper methods for
-// unmarshaling and retrieving arbitrary bit sequences.
+// retrieving message fields and arbitrary bit sequences.
 type RawMessage struct {
 	data bytes.Buffer
 }
 
-// UnmarshalBinary implements the BinaryUnmarshaler interface, storing
-// the supplied data in the RawMessage.
+// UnmarshalBinary implements the BinaryUnmarshaler interface for
+// storing ADS-B data.
 func (r *RawMessage) UnmarshalBinary(data []byte) error {
 	r.data.Reset()
+	r.data.Write(data)
 
-	if len(data) != 7 && len(data) != 14 {
-		return newErrorf(nil, "incorrect data length: %d bytes", len(data))
+	df, err := r.DF()
+	if err != nil {
+		return err
 	}
 
-	r.data.Write(data)
+	switch df {
+	case 0, 4, 5, 11:
+		if len(data) != 7 {
+			return newErrorf(nil, "incorrect data length: %d bits with format %d", len(data)*8, df)
+		}
+	case 16, 17, 18, 19, 20, 21, 24:
+		if len(data) != 14 {
+			return newErrorf(nil, "incorrect data length: %d bits with format %d", len(data)*8, df)
+		}
+	default:
+		return newErrorf(nil, "unknown downlink format: %d bits with format %d", len(data)*8, df)
+	}
 
 	return nil
 }
@@ -163,7 +176,7 @@ func (r RawMessage) CF() (uint64, error) {
 // DF returns the Downlink Format field.
 func (r RawMessage) DF() (uint64, error) {
 	if r.data.Len() == 0 {
-		return 0, newError(nil, "cannot retrieve DF field, no data loaded")
+		return 0, newError(nil, "no data loaded")
 	}
 
 	b := r.Bits(1, 5)
@@ -417,51 +430,41 @@ func (r RawMessage) VS() (uint64, error) {
 }
 
 // Bit returns the n-th bit of the RawMessage, where the first bit is
-// numbered 1. Bit will panic if n is zero or beyond the end of the
-// message.
+// numbered 1. Bit will panic if n is out of range.
 func (r RawMessage) Bit(n int) uint8 {
-	if n <= 0 {
+	switch {
+	case n <= 0:
 		panic("bit must be greater than 0")
-	}
-
-	if n > r.data.Len()*8 {
+	case n > r.data.Len()*8:
 		panic("bit must be within message length")
 	}
 
 	n--
 
-	return (r.data.Bytes()[n/8] >> (7 - uint(n%8))) & 0x01
+	return (r.data.Bytes()[n/8] >> (7 - (n % 8))) & 0x01
 }
 
 // Bits returns bits n through z of the RawMessage, where the first bit
-// is numbered 1. Bits will panic if n is not less than z, if n is zero,
-// if z is beyond the end of the message, or if the result is greater
-// than 64 bits.
-func (r RawMessage) Bits(n int, z int) uint64 {
-	if n <= 0 {
+// is numbered 1. Bits will panic if n or z are out of range, or if the
+// result is greater than 64 bits.
+func (r RawMessage) Bits(n int, z int) (bits uint64) {
+	switch {
+	case n <= 0:
 		panic("lower bound must be greater than 0")
-	}
-
-	if z > r.data.Len()*8 {
+	case z > r.data.Len()*8:
 		panic("upper bound must be within message length")
-	}
-
-	if n > z {
+	case n > z:
 		panic("upper bound must be greater than lower bound")
-	}
-
-	if (z - n) > 64 {
+	case (z - n) > 64:
 		panic("maximum of 64 bits exceeded")
 	}
 
 	n--
 	z--
 
-	nshift := uint(n % 8)
-	zshift := 7 - uint(z%8)
-	bshift := uint(0)
-
-	var result uint64
+	nshift := n % 8
+	zshift := 7 - (z % 8)
+	bshift := 0
 
 	for i := z / 8; i >= n/8; i-- {
 		var b uint8
@@ -471,11 +474,11 @@ func (r RawMessage) Bits(n int, z int) uint64 {
 			b = r.data.Bytes()[i]
 		}
 
-		result |= (uint64(b) << (bshift * 8)) >> zshift
-		bshift++
+		bits |= (uint64(b) << bshift) >> zshift
+		bshift += 8
 	}
 
-	return result
+	return bits
 }
 
 var pTbl = []uint64{
@@ -510,7 +513,7 @@ var pTbl = []uint64{
 }
 
 // Parity returns the calculated parity for the message data.
-func (r RawMessage) Parity() uint64 {
+func (r RawMessage) Parity() (p uint64) {
 	var length, offset int
 
 	switch r.data.Len() {
@@ -524,22 +527,16 @@ func (r RawMessage) Parity() uint64 {
 		return 0
 	}
 
-	var parity uint64
-
 	for i := 1; i <= length; i++ {
 		if r.Bit(i) != 0 {
-			parity ^= pTbl[i+offset-1]
+			p ^= pTbl[i+offset-1]
 		}
 	}
 
-	return parity
+	return p
 }
 
 func (r RawMessage) bytes(n int, z int) []byte {
-	if z < n {
-		panic("upper bound must not be less than lower bound")
-	}
-
 	bytes := make([]byte, ((z-n)/8)+1)
 
 	var bits uint8

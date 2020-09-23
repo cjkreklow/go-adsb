@@ -47,7 +47,7 @@ func (e adsbError) Unwrap() error {
 }
 
 // newError returns a new adsbError.
-func newError(w error, m string) adsbError { //nolint:unparam
+func newError(w error, m string) adsbError { //nolint:unparam // maintain consistency with newErrorf
 	return adsbError{
 		msg:  m,
 		werr: w,
