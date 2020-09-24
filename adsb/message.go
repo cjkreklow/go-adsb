@@ -83,7 +83,7 @@ func (m *Message) validateRaw() error {
 
 // Raw returns the underlying RawMessage. The content of the RawMessage
 // will be overwritten by a subsequent call to UnmarsahalBinary.
-func (m Message) Raw() *RawMessage {
+func (m *Message) Raw() *RawMessage {
 	return m.raw
 }
 
@@ -92,7 +92,7 @@ func (m Message) Raw() *RawMessage {
 // Since the ICAO address is often extracted from the parity field,
 // additional validation against a list of known addresses may be
 // warranted.
-func (m Message) ICAO() (uint64, error) {
+func (m *Message) ICAO() (uint64, error) {
 	aa, err := m.raw.AA()
 	if err == nil {
 		return aa, nil
@@ -109,7 +109,7 @@ func (m Message) ICAO() (uint64, error) {
 }
 
 // Alt returns the altitude.
-func (m Message) Alt() (int64, error) {
+func (m *Message) Alt() (int64, error) {
 	df, err := m.raw.DF()
 	if err != nil {
 		return 0, newError(err, "error retrieving altitude")
@@ -139,7 +139,7 @@ var callChars = []byte(
 	"?ABCDEFGHIJKLMNOPQRSTUVWXYZ????? ???????????????0123456789??????")
 
 // Call returns the callsign.
-func (m Message) Call() (string, error) {
+func (m *Message) Call() (string, error) {
 	df, err := m.raw.DF()
 	if err != nil {
 		return "", newError(err, "error retrieving callsign")
@@ -179,7 +179,7 @@ var sqkTbl = [][]int{
 }
 
 // Sqk returns the squawk code.
-func (m Message) Sqk() ([]byte, error) {
+func (m *Message) Sqk() ([]byte, error) {
 	sqk := make([]byte, 0, 4)
 
 	df, err := m.raw.DF()
@@ -206,7 +206,7 @@ func (m Message) Sqk() ([]byte, error) {
 }
 
 // CPR returns the compact position report.
-func (m Message) CPR() (*CPR, error) {
+func (m *Message) CPR() (*CPR, error) {
 	df, err := m.raw.DF()
 	if err != nil {
 		return nil, newError(err, "error retrieving position")

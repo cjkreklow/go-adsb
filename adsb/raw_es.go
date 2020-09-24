@@ -23,7 +23,7 @@
 package adsb
 
 // ESType returns the extended squitter type code.
-func (r RawMessage) ESType() (uint64, error) {
+func (r *RawMessage) ESType() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -52,7 +52,7 @@ func (r RawMessage) ESType() (uint64, error) {
 }
 
 // ESAltitude returns the extended squitter altitude field.
-func (r RawMessage) ESAltitude() (uint64, error) {
+func (r *RawMessage) ESAltitude() (uint64, error) {
 	tc, err := r.ESType()
 	if err != nil {
 		return 0, err
@@ -68,6 +68,6 @@ func (r RawMessage) ESAltitude() (uint64, error) {
 }
 
 // Get bits from the ME field.
-func (r RawMessage) esbits(n int, z int) uint64 {
+func (r *RawMessage) esbits(n int, z int) uint64 {
 	return r.Bits(n+32, z+32)
 }
