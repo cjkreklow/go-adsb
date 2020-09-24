@@ -32,13 +32,32 @@ import (
 	"kreklow.us/go/go-adsb/adsb"
 )
 
-// TestUnknown tests an unknown message format.
-func TestUnknown(t *testing.T) {
-	t.Run("NewMessage", testUnknownNewMessage)
-	t.Run("Unmarshal", testUnknownUnmarshal)
+func TestMessageErrors(t *testing.T) {
+	t.Run("EmptyRaw", testMsgEmptyRaw)
+	t.Run("Unsupported", testMsgUnsupported)
+	t.Run("Unknown", testMsgUnknown)
+	t.Run("ICAOError0", testMsgICAOErr0)
+	t.Run("ICAOError19", testMsgICAOErr19)
+	t.Run("AltError", testMsgAltErr)
+	t.Run("CallError", testMsgCallErr)
+	t.Run("SqkError", testMsgSqkErr)
+	t.Run("CPRError", testMsgCPRErr)
 }
 
-func testUnknownNewMessage(t *testing.T) {
+func testMsgEmptyRaw(t *testing.T) {
+	rm := new(adsb.RawMessage)
+
+	_, err := adsb.NewMessage(rm)
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+}
+
+func testMsgUnsupported(t *testing.T) {
 	raw, err := hex.DecodeString("ff0000000000ff000000000000ff")
 	if err != nil {
 		t.Fatal("received unexpected error", err)
@@ -59,10 +78,14 @@ func testUnknownNewMessage(t *testing.T) {
 	if err.Error() != "downlink format 24: format unsupported" {
 		t.Error("received unexpected error", err)
 	}
+
+	if !errors.Is(err, adsb.ErrUnsupported) {
+		t.Error("expected error type ErrUnsupported not received")
+	}
 }
 
-func testUnknownUnmarshal(t *testing.T) {
-	raw, err := hex.DecodeString("ff0000000000ff000000000000ff")
+func testMsgUnknown(t *testing.T) {
+	raw, err := hex.DecodeString("600000000000ff000000000000ff")
 	if err != nil {
 		t.Fatal("received unexpected error", err)
 	}
@@ -74,8 +97,237 @@ func testUnknownUnmarshal(t *testing.T) {
 		t.Fatal("received nil, expected error")
 	}
 
-	if err.Error() != "downlink format 24: format unsupported" {
+	if err.Error() != "unknown downlink format: 112 bits with format 12" {
 		t.Error("received unexpected error", err)
+	}
+}
+
+func testMsgICAOErr0(t *testing.T) {
+	raw, err := hex.DecodeString("00000000000000")
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	m := new(adsb.Message)
+
+	err = m.UnmarshalBinary(raw)
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	rm := m.Raw()
+
+	err = rm.UnmarshalBinary([]byte{})
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+
+	icao, err := m.ICAO()
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+
+	if icao != 0 {
+		t.Errorf("expected 0, received %x", icao)
+	}
+}
+
+func testMsgICAOErr19(t *testing.T) {
+	raw, err := hex.DecodeString("00000000000000")
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	m := new(adsb.Message)
+
+	err = m.UnmarshalBinary(raw)
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	raw, err = hex.DecodeString("9800000000000000000000000000")
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	rm := m.Raw()
+
+	err = rm.UnmarshalBinary(raw)
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	icao, err := m.ICAO()
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "error retrieving AP from 19: field not available" {
+		t.Error("received unexpected error", err)
+	}
+
+	if icao != 0 {
+		t.Errorf("expected 0, received %x", icao)
+	}
+}
+
+func testMsgAltErr(t *testing.T) {
+	raw, err := hex.DecodeString("00000000000000")
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	m := new(adsb.Message)
+
+	err = m.UnmarshalBinary(raw)
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	rm := m.Raw()
+
+	err = rm.UnmarshalBinary([]byte{})
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+
+	alt, err := m.Alt()
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "error retrieving altitude: no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+
+	if alt != 0 {
+		t.Errorf("expected 0, received %x", alt)
+	}
+}
+
+func testMsgCallErr(t *testing.T) {
+	raw, err := hex.DecodeString("00000000000000")
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	m := new(adsb.Message)
+
+	err = m.UnmarshalBinary(raw)
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	rm := m.Raw()
+
+	err = rm.UnmarshalBinary([]byte{})
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+
+	call, err := m.Call()
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "error retrieving callsign: no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+
+	if call != "" {
+		t.Errorf("expected nil, received %s", call)
+	}
+}
+
+func testMsgSqkErr(t *testing.T) {
+	raw, err := hex.DecodeString("00000000000000")
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	m := new(adsb.Message)
+
+	err = m.UnmarshalBinary(raw)
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	rm := m.Raw()
+
+	err = rm.UnmarshalBinary([]byte{})
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+
+	sqk, err := m.Sqk()
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "error retrieving squawk: no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+
+	if !bytes.Equal(sqk, []byte{}) {
+		t.Errorf("expected nil, received %x", sqk)
+	}
+}
+
+func testMsgCPRErr(t *testing.T) {
+	raw, err := hex.DecodeString("00000000000000")
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	m := new(adsb.Message)
+
+	err = m.UnmarshalBinary(raw)
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	rm := m.Raw()
+
+	err = rm.UnmarshalBinary([]byte{})
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+
+	cpr, err := m.CPR()
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "error retrieving position: no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+
+	if cpr != nil {
+		t.Error("received unexpected data")
 	}
 }
 
