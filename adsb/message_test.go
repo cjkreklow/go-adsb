@@ -52,7 +52,7 @@ func testMsgEmptyRaw(t *testing.T) {
 		t.Fatal("received nil, expected error")
 	}
 
-	if err.Error() != "no data loaded" {
+	if err.Error() != "no data loaded" { //nolint:goconst // test output
 		t.Error("received unexpected error", err)
 	}
 }
