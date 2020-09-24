@@ -39,15 +39,12 @@ type CPR struct {
 // longitude by comparing the position to a known reference point.
 // Argument and return value is in the format [latitude, longitude].
 func (c *CPR) DecodeLocal(rp []float64) ([]float64, error) {
-	if len(rp) != 2 {
+	switch {
+	case len(rp) != 2:
 		return nil, newError(nil, "must provide [lat, lon] as argument")
-	}
-
-	if rp[0] > 90 || rp[0] < -90 {
+	case rp[0] > 90 || rp[0] < -90:
 		return nil, newError(nil, "latitude out of range (-90 to 90)")
-	}
-
-	if rp[1] > 190 || rp[1] < -180 {
+	case rp[1] > 190 || rp[1] < -180:
 		return nil, newError(nil, "longitude out of range (-180 to 180)")
 	}
 
@@ -88,7 +85,7 @@ func (c *CPR) DecodeLocal(rp []float64) ([]float64, error) {
 // The two messages must have different formats (CPR.F) and must have
 // a time difference of less than 10 seconds (3 NM distance). The
 // return value is in the format [latitude, longitude].
-func DecodeGlobalPosition(c1 *CPR, c2 *CPR) ([]float64, error) { //nolint:funlen
+func DecodeGlobalPosition(c1 *CPR, c2 *CPR) ([]float64, error) {
 	switch {
 	case c1 == nil || c2 == nil:
 		return nil, newError(nil, "incomplete arguments")
@@ -135,11 +132,17 @@ func DecodeGlobalPosition(c1 *CPR, c2 *CPR) ([]float64, error) { //nolint:funlen
 		return nil, newError(nil, "positions cross latitude boundary")
 	}
 
+	coord := calcGlobal(t0, lon0, lon1, rlat0, rlat1)
+
+	return coord, nil
+}
+
+func calcGlobal(t0 bool, lon0, lon1, rlat0, rlat1 float64) []float64 {
 	var nl, ni, dlon, lonc float64
 
 	coord := make([]float64, 2)
 
-	if t0 { //nolint:nestif
+	if t0 { //nolint:nestif // variables assigned based on t0 type
 		coord[0] = rlat0
 		nl = float64(cprNL(rlat0))
 
@@ -172,7 +175,7 @@ func DecodeGlobalPosition(c1 *CPR, c2 *CPR) ([]float64, error) { //nolint:funlen
 		coord[1] -= 360
 	}
 
-	return coord, nil
+	return coord
 }
 
 // mod implements the MOD function as defined in the ADS-B

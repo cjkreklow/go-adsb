@@ -25,14 +25,39 @@ package adsb_test
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"math/big"
 	"testing"
 
 	"kreklow.us/go/go-adsb/adsb"
 )
 
-// TestUnknown tests an unknown message format.
-func TestUnknown(t *testing.T) {
+func TestMessageErrors(t *testing.T) {
+	t.Run("EmptyRaw", testMsgEmptyRaw)
+	t.Run("Unsupported", testMsgUnsupported)
+	t.Run("Unknown", testMsgUnknown)
+	t.Run("ICAOError0", testMsgICAOErr0)
+	t.Run("ICAOError19", testMsgICAOErr19)
+	t.Run("AltError", testMsgAltErr)
+	t.Run("CallError", testMsgCallErr)
+	t.Run("SqkError", testMsgSqkErr)
+	t.Run("CPRError", testMsgCPRErr)
+}
+
+func testMsgEmptyRaw(t *testing.T) {
+	rm := new(adsb.RawMessage)
+
+	_, err := adsb.NewMessage(rm)
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "no data loaded" { //nolint:goconst // test output
+		t.Error("received unexpected error", err)
+	}
+}
+
+func testMsgUnsupported(t *testing.T) {
 	raw, err := hex.DecodeString("ff0000000000ff000000000000ff")
 	if err != nil {
 		t.Fatal("received unexpected error", err)
@@ -50,8 +75,259 @@ func TestUnknown(t *testing.T) {
 		t.Fatal("received nil, expected error")
 	}
 
-	if err.Error() != "unsupported message format: 24" {
+	if err.Error() != "downlink format 24: format unsupported" {
 		t.Error("received unexpected error", err)
+	}
+
+	if !errors.Is(err, adsb.ErrUnsupported) {
+		t.Error("expected error type ErrUnsupported not received")
+	}
+}
+
+func testMsgUnknown(t *testing.T) {
+	raw, err := hex.DecodeString("600000000000ff000000000000ff")
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	m := new(adsb.Message)
+
+	err = m.UnmarshalBinary(raw)
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "unknown downlink format: 112 bits with format 12" {
+		t.Error("received unexpected error", err)
+	}
+}
+
+func testMsgICAOErr0(t *testing.T) {
+	raw, err := hex.DecodeString("00000000000000")
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	m := new(adsb.Message)
+
+	err = m.UnmarshalBinary(raw)
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	rm := m.Raw()
+
+	err = rm.UnmarshalBinary([]byte{})
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+
+	icao, err := m.ICAO()
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+
+	if icao != 0 {
+		t.Errorf("expected 0, received %x", icao)
+	}
+}
+
+func testMsgICAOErr19(t *testing.T) {
+	raw, err := hex.DecodeString("00000000000000")
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	m := new(adsb.Message)
+
+	err = m.UnmarshalBinary(raw)
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	raw, err = hex.DecodeString("9800000000000000000000000000")
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	rm := m.Raw()
+
+	err = rm.UnmarshalBinary(raw)
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	icao, err := m.ICAO()
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "error retrieving AP from 19: field not available" {
+		t.Error("received unexpected error", err)
+	}
+
+	if icao != 0 {
+		t.Errorf("expected 0, received %x", icao)
+	}
+}
+
+func testMsgAltErr(t *testing.T) {
+	raw, err := hex.DecodeString("00000000000000")
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	m := new(adsb.Message)
+
+	err = m.UnmarshalBinary(raw)
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	rm := m.Raw()
+
+	err = rm.UnmarshalBinary([]byte{})
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+
+	alt, err := m.Alt()
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "error retrieving altitude: no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+
+	if alt != 0 {
+		t.Errorf("expected 0, received %x", alt)
+	}
+}
+
+func testMsgCallErr(t *testing.T) {
+	raw, err := hex.DecodeString("00000000000000")
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	m := new(adsb.Message)
+
+	err = m.UnmarshalBinary(raw)
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	rm := m.Raw()
+
+	err = rm.UnmarshalBinary([]byte{})
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+
+	call, err := m.Call()
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "error retrieving callsign: no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+
+	if call != "" {
+		t.Errorf("expected nil, received %s", call)
+	}
+}
+
+func testMsgSqkErr(t *testing.T) {
+	raw, err := hex.DecodeString("00000000000000")
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	m := new(adsb.Message)
+
+	err = m.UnmarshalBinary(raw)
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	rm := m.Raw()
+
+	err = rm.UnmarshalBinary([]byte{})
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+
+	sqk, err := m.Sqk()
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "error retrieving squawk: no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+
+	if !bytes.Equal(sqk, []byte{}) {
+		t.Errorf("expected nil, received %x", sqk)
+	}
+}
+
+func testMsgCPRErr(t *testing.T) {
+	raw, err := hex.DecodeString("00000000000000")
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	m := new(adsb.Message)
+
+	err = m.UnmarshalBinary(raw)
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	rm := m.Raw()
+
+	err = rm.UnmarshalBinary([]byte{})
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+
+	cpr, err := m.CPR()
+	if err == nil {
+		t.Fatal("received nil, expected error")
+	}
+
+	if err.Error() != "error retrieving position: no data loaded" {
+		t.Error("received unexpected error", err)
+	}
+
+	if cpr != nil {
+		t.Error("received unexpected data")
 	}
 }
 
@@ -80,6 +356,8 @@ type testCase struct {
 	Sqk  []byte
 	Call string
 	Alt  int64
+
+	AltError string
 }
 
 // TestDecode runs the test cases for message decoding.
@@ -95,6 +373,12 @@ func TestDecode(t *testing.T) {
 	t.Run("DF17 Identity", testDF17Ident)
 	t.Run("DF20", testDF20)
 	t.Run("DF21", testDF21)
+}
+
+// TestDecodeErrors runs test cases for message decoding errors.
+func TestDecodeErrors(t *testing.T) {
+	t.Run("MetricAltitude", testAltErrMetric)
+	t.Run("InvalidAltitude", testAltErrInvalid)
 }
 
 // test DF0 air-to-air surveillance.
@@ -150,7 +434,7 @@ func testDF4A(t *testing.T) {
 // test DF4 with a Gillham-encoded altitude.
 func testDF4B(t *testing.T) {
 	tc := &testCase{
-		Msg: "2000042210fc86",
+		Msg: "2000102a10fc86",
 
 		DF: 4,
 		CA: -1,
@@ -163,8 +447,8 @@ func testDF4B(t *testing.T) {
 
 		CPR: false,
 
-		ICAO: 0xa97172,
-		Alt:  2000,
+		ICAO: 0x71ef1e,
+		Alt:  1300,
 		Sqk:  []byte{},
 		Call: "",
 	}
@@ -387,7 +671,7 @@ func testDF17Ident(t *testing.T) {
 	testDecode(t, tc)
 }
 
-func testDecode(t *testing.T, tc *testCase) { //nolint:funlen,gocognit
+func testDecode(t *testing.T, tc *testCase) {
 	b, err := hex.DecodeString(tc.Msg)
 	if err != nil {
 		t.Fatal("received unexpected error", err)
@@ -400,118 +684,215 @@ func testDecode(t *testing.T, tc *testCase) { //nolint:funlen,gocognit
 		t.Fatal("received unexpected error", err)
 	}
 
-	/*
-		if msg.DF() != adsb.DF(tc.DF) {
-			t.Errorf("DF: received %v, expected %v", int(msg.DF()), tc.DF)
+	testICAO(t, tc, msg)
+	testSqk(t, tc, msg)
+	testCall(t, tc, msg)
+	testAlt(t, tc, msg)
+	testCPR(t, tc, msg)
+}
+
+func testCPR(t *testing.T, tc *testCase, msg *adsb.Message) {
+	cpr, err := msg.CPR()
+	if err != nil {
+		if tc.CPR != false || tc.CPR == false && !errors.Is(err, adsb.ErrNotAvailable) {
+			t.Fatal("received unexpected error", err)
 		}
-		if msg.CA() != adsb.CA(tc.CA) {
-			t.Errorf("CA: received %v, expected %v", int(msg.CA()), tc.CA)
-		}
-		if msg.FS() != adsb.FS(tc.FS) {
-			t.Errorf("FS: received %v, expected %v", int(msg.FS()), tc.FS)
-		}
-		if msg.VS() != adsb.VS(tc.VS) {
-			t.Errorf("VS: received %v, expected %v", int(msg.VS()), tc.VS)
-		}
-		if msg.TC() != adsb.TC(tc.TC) {
-			t.Errorf("TC: received %v, expected %v", int(msg.TC()), tc.TC)
-		}
-		if msg.SS() != adsb.SS(tc.SS) {
-			t.Errorf("SS: received %v, expected %v", int(msg.SS()), tc.SS)
-		}
-		if msg.AcCat() != adsb.AcCat(tc.Cat) {
-			t.Errorf("AcCat: received %v, expected %v", msg.AcCat(), tc.Cat)
-		}
-	*/
-	if msg.ICAO() != tc.ICAO {
-		t.Errorf("ICAO: received %06x, expected %06x", msg.ICAO(), tc.ICAO)
 	}
 
-	if !bytes.Equal(msg.Sqk(), tc.Sqk) {
-		t.Errorf("Sqk: received %s, expected %s", msg.Sqk(), tc.Sqk)
-	}
-
-	if msg.Call() != tc.Call {
-		t.Errorf("Call: received %s, expected %s", msg.Call(), tc.Call)
-	}
-
-	a, _ := msg.Alt()
-	if a != tc.Alt {
-		t.Errorf("Alt: received %v, expected %v", a, tc.Alt)
-	}
-
-	cpr, _ := msg.CPR()
 	if !tc.CPR && cpr != nil {
 		t.Error("CPR: unexpected position report populated")
 	}
 
-	if tc.CPR && tc.LocalPos { //nolint:nestif
+	if tc.CPR && tc.LocalPos {
 		if cpr == nil {
 			t.Error("CPR: expected but not present")
 		} else {
-			c, err := cpr.DecodeLocal(tc.RefPt)
-			if err != nil {
-				t.Error("CPR: local decode error:", err)
-			} else {
-				eLat := big.NewFloat(tc.Lat)
-				eLat.SetPrec(16)
-				cLat := big.NewFloat(c[0])
-				cLat.SetPrec(16)
-				if eLat.Cmp(cLat) != 0 {
-					t.Errorf("Lat: received %s, expected %s", cLat.String(), eLat.String())
-				}
-				eLon := big.NewFloat(tc.Lon)
-				eLon.SetPrec(16)
-				cLon := big.NewFloat(c[1])
-				cLon.SetPrec(16)
-				if eLon.Cmp(cLon) != 0 {
-					t.Errorf("Lon: received %s, expected %s", cLon.String(), eLon.String())
-				}
-			}
+			testCPRLocal(t, tc, cpr)
 		}
 	}
 
-	if tc.CPR && tc.GlobalPos { //nolint:nestif
+	if tc.CPR && tc.GlobalPos {
 		if cpr == nil {
 			t.Error("CPR: expected but not present")
 		} else {
-			rm2 := new(adsb.RawMessage)
-			m2b, err := (hex.DecodeString(tc.Msg2))
-			if err != nil {
-				t.Fatal("received unexpected error", err)
-			}
-			err = rm2.UnmarshalBinary(m2b)
-			if err != nil {
-				t.Fatal("received unexpected error", err)
-			}
-			m2, err := adsb.NewMessage(rm2)
-			if err != nil {
-				t.Fatal("received unexpected error", err)
-			}
-
-			cpr2, _ := m2.CPR()
-			if cpr2 == nil {
-				t.Fatal("no position decoded in Msg2")
-			}
-			c, err := adsb.DecodeGlobalPosition(cpr, cpr2)
-			if err != nil {
-				t.Error("CPR: global decode error:", err)
-			} else {
-				eLat := big.NewFloat(tc.Lat)
-				eLat.SetPrec(16)
-				cLat := big.NewFloat(c[0])
-				cLat.SetPrec(16)
-				if eLat.Cmp(cLat) != 0 {
-					t.Errorf("Lat: received %s, expected %s", cLat.String(), eLat.String())
-				}
-				eLon := big.NewFloat(tc.Lon)
-				eLon.SetPrec(16)
-				cLon := big.NewFloat(c[1])
-				cLon.SetPrec(16)
-				if eLon.Cmp(cLon) != 0 {
-					t.Errorf("Lon: received %s, expected %s", cLon.String(), eLon.String())
-				}
-			}
+			testCPRGlobal(t, tc, cpr)
 		}
+	}
+}
+
+func testCPRLocal(t *testing.T, tc *testCase, cpr *adsb.CPR) {
+	c, err := cpr.DecodeLocal(tc.RefPt)
+	if err != nil {
+		t.Error("CPR: local decode error:", err)
+	} else {
+		eLat := big.NewFloat(tc.Lat)
+		eLat.SetPrec(16)
+		cLat := big.NewFloat(c[0])
+		cLat.SetPrec(16)
+		if eLat.Cmp(cLat) != 0 {
+			t.Errorf("Lat: received %s, expected %s", cLat.String(), eLat.String())
+		}
+		eLon := big.NewFloat(tc.Lon)
+		eLon.SetPrec(16)
+		cLon := big.NewFloat(c[1])
+		cLon.SetPrec(16)
+		if eLon.Cmp(cLon) != 0 {
+			t.Errorf("Lon: received %s, expected %s", cLon.String(), eLon.String())
+		}
+	}
+}
+
+func testCPRGlobal(t *testing.T, tc *testCase, cpr *adsb.CPR) {
+	rm := new(adsb.RawMessage)
+
+	m2b, err := (hex.DecodeString(tc.Msg2))
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	err = rm.UnmarshalBinary(m2b)
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	m, err := adsb.NewMessage(rm)
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	cpr2, err := m.CPR()
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	if cpr2 == nil {
+		t.Fatal("no position decoded in Msg2")
+	}
+
+	c, err := adsb.DecodeGlobalPosition(cpr, cpr2)
+	if err != nil {
+		t.Error("CPR: global decode error:", err)
+	} else {
+		eLat := big.NewFloat(tc.Lat)
+		eLat.SetPrec(16)
+		cLat := big.NewFloat(c[0])
+		cLat.SetPrec(16)
+		if eLat.Cmp(cLat) != 0 {
+			t.Errorf("Lat: received %s, expected %s", cLat.String(), eLat.String())
+		}
+		eLon := big.NewFloat(tc.Lon)
+		eLon.SetPrec(16)
+		cLon := big.NewFloat(c[1])
+		cLon.SetPrec(16)
+		if eLon.Cmp(cLon) != 0 {
+			t.Errorf("Lon: received %s, expected %s", cLon.String(), eLon.String())
+		}
+	}
+}
+
+func testICAO(t *testing.T, tc *testCase, msg *adsb.Message) {
+	icao, err := msg.ICAO()
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	if icao != tc.ICAO {
+		t.Errorf("ICAO: received %06x, expected %06x", icao, tc.ICAO)
+	}
+}
+
+func testSqk(t *testing.T, tc *testCase, msg *adsb.Message) {
+	sqk, err := msg.Sqk()
+	if err != nil {
+		if len(tc.Sqk) > 0 || len(tc.Sqk) == 0 && !errors.Is(err, adsb.ErrNotAvailable) {
+			t.Fatal("received unexpected error", err)
+		}
+	}
+
+	if !bytes.Equal(sqk, tc.Sqk) {
+		t.Errorf("Sqk: received %s, expected %s", sqk, tc.Sqk)
+	}
+}
+
+func testCall(t *testing.T, tc *testCase, msg *adsb.Message) {
+	call, err := msg.Call()
+	if err != nil {
+		if tc.Call != "" || tc.Call == "" && !errors.Is(err, adsb.ErrNotAvailable) {
+			t.Fatal("received unexpected error", err)
+		}
+	}
+
+	if call != tc.Call {
+		t.Errorf("Call: received %s, expected %s", call, tc.Call)
+	}
+}
+
+func testAlt(t *testing.T, tc *testCase, msg *adsb.Message) {
+	a, err := msg.Alt()
+	if err != nil {
+		if tc.Alt != 0 || tc.Alt == 0 && !errors.Is(err, adsb.ErrNotAvailable) {
+			t.Fatal("received unexpected error", err)
+		}
+	}
+
+	if a != tc.Alt {
+		t.Errorf("Alt: received %v, expected %v", a, tc.Alt)
+	}
+}
+
+// test DF4 with metric altitude.
+func testAltErrMetric(t *testing.T) {
+	tc := &testCase{
+		Msg: "2000046210fc86",
+
+		AltError: "metric altitude not supported",
+	}
+
+	testDecodeErr(t, tc)
+}
+
+// test DF4 with invalid altitude.
+func testAltErrInvalid(t *testing.T) {
+	tc := &testCase{
+		Msg: "2000002210fc86",
+
+		AltError: "invalid altitude value",
+	}
+
+	testDecodeErr(t, tc)
+}
+
+func testDecodeErr(t *testing.T, tc *testCase) {
+	b, err := hex.DecodeString(tc.Msg)
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	msg := new(adsb.Message)
+
+	err = msg.UnmarshalBinary(b)
+	if err != nil {
+		t.Fatal("received unexpected error", err)
+	}
+
+	if tc.AltError != "" {
+		testAltError(t, tc, msg)
+	}
+}
+
+func testAltError(t *testing.T, tc *testCase, msg *adsb.Message) {
+	a, err := msg.Alt()
+	if err == nil {
+		t.Error("expected error, received nil")
+
+		return
+	}
+
+	if a != 0 {
+		t.Errorf("expected 0, received %d", a)
+	}
+
+	if tc.AltError != err.Error() {
+		t.Errorf("expected %s, received %s", tc.AltError, err)
 	}
 }

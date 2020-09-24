@@ -33,28 +33,54 @@ import (
 	"kreklow.us/go/go-adsb/adsb"
 )
 
-func TestRawUnmarshalErrors(t *testing.T) {
-	if t.Run("Interface", testRawUnmarshalInterface) {
-		t.Run("ShortMsg", testRawUnmarshalShort)
-	}
-}
-
-func testRawUnmarshalInterface(t *testing.T) {
+func TestRawUnmarshalInterface(t *testing.T) {
 	var i interface{} = new(adsb.RawMessage)
 	if _, ok := i.(encoding.BinaryUnmarshaler); !ok {
 		t.Fatal("RawMessage does not implement encoding.BinaryUnmarshaler")
 	}
 }
 
-func testRawUnmarshalShort(t *testing.T) {
-	expErr := "incorrect data length: 2 bytes"
-	m := new(adsb.RawMessage)
+func TestRawUnmarshalErrors(t *testing.T) {
+	t.Run("NoData", testRawUnmarshalNoData)
+	t.Run("Short0", testRawUnmarshalShort0)
+	t.Run("Long4", testRawUnmarshalLong4)
+	t.Run("Short17", testRawUnmarshalShort17)
+	t.Run("Unknown12", testRawUnmarshalUnk12)
+}
 
-	err := m.UnmarshalBinary([]byte{0xf0, 0x0f})
+func testRawUnmarshalNoData(t *testing.T) {
+	testRawUnmarshalErr(t, "", "no data loaded")
+}
+
+func testRawUnmarshalShort0(t *testing.T) {
+	testRawUnmarshalErr(t, "00ff", "incorrect data length: 16 bits with format 0")
+}
+
+func testRawUnmarshalLong4(t *testing.T) {
+	testRawUnmarshalErr(t, "20ffffffffffffff", "incorrect data length: 64 bits with format 4")
+}
+
+func testRawUnmarshalShort17(t *testing.T) {
+	testRawUnmarshalErr(t, "8800ff00", "incorrect data length: 32 bits with format 17")
+}
+
+func testRawUnmarshalUnk12(t *testing.T) {
+	testRawUnmarshalErr(t, "6000ff", "unknown downlink format: 24 bits with format 12")
+}
+
+func testRawUnmarshalErr(t *testing.T, m string, e string) {
+	b, err := hex.DecodeString(m)
+	if err != nil {
+		t.Fatal("received unexpected error:", err)
+	}
+
+	rm := new(adsb.RawMessage)
+
+	err = rm.UnmarshalBinary(b)
 	if err == nil {
 		t.Fatal("expected error, received nil")
-	} else if err.Error() != expErr {
-		t.Fatalf("expected: %s ; received: %s", expErr, err)
+	} else if err.Error() != e {
+		t.Fatalf("expected %s, received %s", e, err)
 	}
 }
 
@@ -283,7 +309,7 @@ func testRawBitsRev(t *testing.T) {
 }
 
 func testRawBitsBig(t *testing.T) {
-	b, err := hex.DecodeString("00aabbccddeeff00aabbccddeeff")
+	b, err := hex.DecodeString("88aabbccddeeff00aabbccddeeff")
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
 	}
@@ -522,7 +548,7 @@ func testRaw(t *testing.T, m string, results map[string]uint64) {
 			"error retrieving %s from %d: field not available",
 			n, results["DF"])
 
-		if r, ok := results[n]; ok { //nolint:nestif
+		if r, ok := results[n]; ok { //nolint:nestif // recursive testing function
 			b, err := f()
 			if err != nil {
 				t.Errorf("%s  unexpected error: %v", n, err)
@@ -565,7 +591,7 @@ func testRawMD(t *testing.T, m string, r []byte) {
 
 	n := "MD"
 
-	if r != nil { //nolint:nestif
+	if r != nil { //nolint:nestif // test chain
 		b, err := rm.MD()
 		if err != nil {
 			t.Errorf("%s  unexpected error: %v", n, err)
@@ -605,9 +631,10 @@ func TestRawFieldsNotLoaded(t *testing.T) {
 		"MB": rm.MB, "ME": rm.ME, "MV": rm.MV,
 		"ND": rm.ND, "PI": rm.PI, "RI": rm.RI,
 		"SL": rm.SL, "UM": rm.UM, "VS": rm.VS,
+		"ESType": rm.ESType, "ESAltitude": rm.ESAltitude,
 	}
 
-	expErr := "cannot retrieve DF field, no data loaded"
+	expErr := "no data loaded"
 
 	for n, f := range fields {
 		b, err := f()

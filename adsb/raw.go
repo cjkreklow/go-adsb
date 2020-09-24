@@ -27,27 +27,40 @@ import (
 )
 
 // RawMessage is a raw binary ADS-B message with helper methods for
-// unmarshaling and retrieving arbitrary bit sequences.
+// retrieving message fields and arbitrary bit sequences.
 type RawMessage struct {
 	data bytes.Buffer
 }
 
-// UnmarshalBinary implements the BinaryUnmarshaler interface, storing
-// the supplied data in the RawMessage.
+// UnmarshalBinary implements the BinaryUnmarshaler interface for
+// storing ADS-B data.
 func (r *RawMessage) UnmarshalBinary(data []byte) error {
 	r.data.Reset()
+	r.data.Write(data)
 
-	if len(data) != 7 && len(data) != 14 {
-		return newErrorf(nil, "incorrect data length: %d bytes", len(data))
+	df, err := r.DF()
+	if err != nil {
+		return err
 	}
 
-	r.data.Write(data)
+	switch df {
+	case 0, 4, 5, 11:
+		if len(data) != 7 {
+			return newErrorf(nil, "incorrect data length: %d bits with format %d", len(data)*8, df)
+		}
+	case 16, 17, 18, 19, 20, 21, 24:
+		if len(data) != 14 {
+			return newErrorf(nil, "incorrect data length: %d bits with format %d", len(data)*8, df)
+		}
+	default:
+		return newErrorf(nil, "unknown downlink format: %d bits with format %d", len(data)*8, df)
+	}
 
 	return nil
 }
 
 // AA returns the Address Announced field.
-func (r RawMessage) AA() (uint64, error) {
+func (r *RawMessage) AA() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -63,7 +76,7 @@ func (r RawMessage) AA() (uint64, error) {
 }
 
 // AC returns the Altitude Code field.
-func (r RawMessage) AC() (uint64, error) {
+func (r *RawMessage) AC() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -79,7 +92,7 @@ func (r RawMessage) AC() (uint64, error) {
 }
 
 // AF returns the Application Field.
-func (r RawMessage) AF() (uint64, error) {
+func (r *RawMessage) AF() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -95,7 +108,7 @@ func (r RawMessage) AF() (uint64, error) {
 }
 
 // AP returns the Address / Parity field.
-func (r RawMessage) AP() (uint64, error) {
+func (r *RawMessage) AP() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -113,7 +126,7 @@ func (r RawMessage) AP() (uint64, error) {
 }
 
 // CA returns the Capability field.
-func (r RawMessage) CA() (uint64, error) {
+func (r *RawMessage) CA() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -129,7 +142,7 @@ func (r RawMessage) CA() (uint64, error) {
 }
 
 // CC returns the Cross-link Capability field.
-func (r RawMessage) CC() (uint64, error) {
+func (r *RawMessage) CC() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -145,7 +158,7 @@ func (r RawMessage) CC() (uint64, error) {
 }
 
 // CF returns the Control Field.
-func (r RawMessage) CF() (uint64, error) {
+func (r *RawMessage) CF() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -161,9 +174,9 @@ func (r RawMessage) CF() (uint64, error) {
 }
 
 // DF returns the Downlink Format field.
-func (r RawMessage) DF() (uint64, error) {
+func (r *RawMessage) DF() (uint64, error) {
 	if r.data.Len() == 0 {
-		return 0, newError(nil, "cannot retrieve DF field, no data loaded")
+		return 0, newError(nil, "no data loaded")
 	}
 
 	b := r.Bits(1, 5)
@@ -175,7 +188,7 @@ func (r RawMessage) DF() (uint64, error) {
 }
 
 // DP returns the Data Parity field.
-func (r RawMessage) DP() (uint64, error) {
+func (r *RawMessage) DP() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -191,7 +204,7 @@ func (r RawMessage) DP() (uint64, error) {
 }
 
 // DR returns the Downlink Request field.
-func (r RawMessage) DR() (uint64, error) {
+func (r *RawMessage) DR() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -207,7 +220,7 @@ func (r RawMessage) DR() (uint64, error) {
 }
 
 // FS returns the Flight Status field.
-func (r RawMessage) FS() (uint64, error) {
+func (r *RawMessage) FS() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -223,7 +236,7 @@ func (r RawMessage) FS() (uint64, error) {
 }
 
 // ID returns the Identity field.
-func (r RawMessage) ID() (uint64, error) {
+func (r *RawMessage) ID() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -239,7 +252,7 @@ func (r RawMessage) ID() (uint64, error) {
 }
 
 // KE returns the ELM Control field.
-func (r RawMessage) KE() (uint64, error) {
+func (r *RawMessage) KE() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -255,7 +268,7 @@ func (r RawMessage) KE() (uint64, error) {
 }
 
 // MB returns the Comm-B Message field.
-func (r RawMessage) MB() (uint64, error) {
+func (r *RawMessage) MB() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -271,7 +284,7 @@ func (r RawMessage) MB() (uint64, error) {
 }
 
 // MD returns the Comm-D Message field.
-func (r RawMessage) MD() ([]byte, error) {
+func (r *RawMessage) MD() ([]byte, error) {
 	df, err := r.DF()
 	if err != nil {
 		return nil, err
@@ -287,7 +300,7 @@ func (r RawMessage) MD() ([]byte, error) {
 }
 
 // ME returns the Extended Squitter Message field.
-func (r RawMessage) ME() (uint64, error) {
+func (r *RawMessage) ME() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -303,7 +316,7 @@ func (r RawMessage) ME() (uint64, error) {
 }
 
 // MV returns the ACAS Message field.
-func (r RawMessage) MV() (uint64, error) {
+func (r *RawMessage) MV() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -319,7 +332,7 @@ func (r RawMessage) MV() (uint64, error) {
 }
 
 // ND returns the Number of D-segment field.
-func (r RawMessage) ND() (uint64, error) {
+func (r *RawMessage) ND() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -335,7 +348,7 @@ func (r RawMessage) ND() (uint64, error) {
 }
 
 // PI returns the Parity / Interrogator Identifier field.
-func (r RawMessage) PI() (uint64, error) {
+func (r *RawMessage) PI() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -353,7 +366,7 @@ func (r RawMessage) PI() (uint64, error) {
 }
 
 // RI returns the Reply Information field.
-func (r RawMessage) RI() (uint64, error) {
+func (r *RawMessage) RI() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -369,7 +382,7 @@ func (r RawMessage) RI() (uint64, error) {
 }
 
 // SL returns the Sensitivity Level field.
-func (r RawMessage) SL() (uint64, error) {
+func (r *RawMessage) SL() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -385,7 +398,7 @@ func (r RawMessage) SL() (uint64, error) {
 }
 
 // UM returns the Utility Message field.
-func (r RawMessage) UM() (uint64, error) {
+func (r *RawMessage) UM() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -401,7 +414,7 @@ func (r RawMessage) UM() (uint64, error) {
 }
 
 // VS returns the Vertical Status field.
-func (r RawMessage) VS() (uint64, error) {
+func (r *RawMessage) VS() (uint64, error) {
 	df, err := r.DF()
 	if err != nil {
 		return 0, err
@@ -417,51 +430,41 @@ func (r RawMessage) VS() (uint64, error) {
 }
 
 // Bit returns the n-th bit of the RawMessage, where the first bit is
-// numbered 1. Bit will panic if n is zero or beyond the end of the
-// message.
-func (r RawMessage) Bit(n int) uint8 {
-	if n <= 0 {
+// numbered 1. Bit will panic if n is out of range.
+func (r *RawMessage) Bit(n int) uint8 {
+	switch {
+	case n <= 0:
 		panic("bit must be greater than 0")
-	}
-
-	if n > r.data.Len()*8 {
+	case n > r.data.Len()*8:
 		panic("bit must be within message length")
 	}
 
 	n--
 
-	return (r.data.Bytes()[n/8] >> (7 - uint(n%8))) & 0x01
+	return (r.data.Bytes()[n/8] >> (7 - (n % 8))) & 0x01
 }
 
 // Bits returns bits n through z of the RawMessage, where the first bit
-// is numbered 1. Bits will panic if n is not less than z, if n is zero,
-// if z is beyond the end of the message, or if the result is greater
-// than 64 bits.
-func (r RawMessage) Bits(n int, z int) uint64 {
-	if n <= 0 {
+// is numbered 1. Bits will panic if n or z are out of range, or if the
+// result is greater than 64 bits.
+func (r *RawMessage) Bits(n int, z int) (bits uint64) {
+	switch {
+	case n <= 0:
 		panic("lower bound must be greater than 0")
-	}
-
-	if z > r.data.Len()*8 {
+	case z > r.data.Len()*8:
 		panic("upper bound must be within message length")
-	}
-
-	if n > z {
+	case n > z:
 		panic("upper bound must be greater than lower bound")
-	}
-
-	if (z - n) > 64 {
+	case (z - n) > 64:
 		panic("maximum of 64 bits exceeded")
 	}
 
 	n--
 	z--
 
-	nshift := uint(n % 8)
-	zshift := 7 - uint(z%8)
-	bshift := uint(0)
-
-	var result uint64
+	nshift := n % 8
+	zshift := 7 - (z % 8)
+	bshift := 0
 
 	for i := z / 8; i >= n/8; i-- {
 		var b uint8
@@ -471,11 +474,11 @@ func (r RawMessage) Bits(n int, z int) uint64 {
 			b = r.data.Bytes()[i]
 		}
 
-		result |= (uint64(b) << (bshift * 8)) >> zshift
-		bshift++
+		bits |= (uint64(b) << bshift) >> zshift
+		bshift += 8
 	}
 
-	return result
+	return bits
 }
 
 var pTbl = []uint64{
@@ -510,7 +513,7 @@ var pTbl = []uint64{
 }
 
 // Parity returns the calculated parity for the message data.
-func (r RawMessage) Parity() uint64 {
+func (r *RawMessage) Parity() (p uint64) {
 	var length, offset int
 
 	switch r.data.Len() {
@@ -524,22 +527,16 @@ func (r RawMessage) Parity() uint64 {
 		return 0
 	}
 
-	var parity uint64
-
 	for i := 1; i <= length; i++ {
 		if r.Bit(i) != 0 {
-			parity ^= pTbl[i+offset-1]
+			p ^= pTbl[i+offset-1]
 		}
 	}
 
-	return parity
+	return p
 }
 
-func (r RawMessage) bytes(n int, z int) []byte {
-	if z < n {
-		panic("upper bound must not be less than lower bound")
-	}
-
+func (r *RawMessage) bytes(n int, z int) []byte {
 	bytes := make([]byte, ((z-n)/8)+1)
 
 	var bits uint8
