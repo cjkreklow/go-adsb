@@ -61,6 +61,7 @@ func TestUnmarshalError(t *testing.T) {
 	t.Run("BadLength1", testUnmarshalBadLength1)
 	t.Run("BadLength2", testUnmarshalBadLength2)
 	t.Run("BadLength3", testUnmarshalBadLength3)
+	t.Run("BadEscape", testUnmarshalBadEscape)
 	t.Run("BadType", testUnmarshalBadType)
 	t.Run("NoType", testUnmarshalNoType)
 }
@@ -79,6 +80,10 @@ func testUnmarshalBadLength2(t *testing.T) {
 
 func testUnmarshalBadLength3(t *testing.T) {
 	testUnmarshalError(t, "1a33ffffffffffffffffffffffffffffffffffffffffffffff", "expected 23 bytes, received 25")
+}
+
+func testUnmarshalBadEscape(t *testing.T) {
+	testUnmarshalError(t, "1a31ffffffffffffffffffffffffff1a", "expected 11 bytes, received 16")
 }
 
 func testUnmarshalBadType(t *testing.T) {
@@ -227,12 +232,12 @@ func testUnmarshalMarshal(t *testing.T) {
 }
 
 func testUnmarshalADSB(t *testing.T) {
-	msg, err := hex.DecodeString("1a321a1af933baf325c45da99adad95ff6")
+	msg, err := hex.DecodeString("1a321a1af933baf325c45da99adad91a1a1a1a")
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
 
-	data, err := hex.DecodeString("5da99adad95ff6")
+	data, err := hex.DecodeString("5da99adad91a1a")
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
