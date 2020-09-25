@@ -51,8 +51,8 @@ func (f *Frame) UnmarshalBinary(data []byte) error {
 	}
 
 	for i := 0; i < len(data); i++ {
-		if i > 0 && data[i-1] == 0x1a && data[i] == 0x1a {
-			continue
+		if data[i] == 0x1a && (i+1) < len(data) && data[i+1] == 0x1a {
+			i++
 		}
 
 		f.data.WriteByte(data[i])
