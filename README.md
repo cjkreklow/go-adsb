@@ -4,14 +4,12 @@
 ![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/cjkreklow/go-adsb.svg)
 [![Build Status](https://www.travis-ci.org/cjkreklow/go-adsb.svg?branch=main)](https://www.travis-ci.org/cjkreklow/go-adsb)
 [![codecov](https://codecov.io/gh/cjkreklow/go-adsb/branch/main/graph/badge.svg)](https://codecov.io/gh/cjkreklow/go-adsb)
-[![Go Report Card](https://goreportcard.com/badge/kreklow.us/go/go-adsb)](https://goreportcard.com/report/kreklow.us/go/go-adsb)
 
 `go-adsb` is a Go Module which includes packages for working with ADS-B
 aircraft tracking data.
 
-
 # Usage
-See the individual package GoDoc pages for import paths and usage
+See the individual package documentation pages for import paths and usage
 information.
 
 # About
