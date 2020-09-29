@@ -106,7 +106,7 @@ func (f Frame) Bytes() []byte {
 	return f.data.Bytes()
 }
 
-// MarshalADSB returns the ADS-B or Mode-AC data in the Frame.
+// MarshalADSB returns the ADS-B data in the Frame.
 //
 // The returned slice remains valid until the next call to
 // UnmarshalBinary. Modifying the returned slice directly may impact
@@ -116,7 +116,28 @@ func (f Frame) MarshalADSB() ([]byte, error) {
 		return nil, ErrNoData
 	}
 
-	return f.data.Bytes()[9:], nil
+	b := f.data.Bytes()
+
+	if !(b[0] == 0x1a && (b[1] == 0x32 || b[1] == 0x33)) {
+		return nil, ErrNoData
+	}
+
+	return b[9:], nil
+}
+
+// ModeAC returns the Mode AC data in the Frame.
+func (f Frame) ModeAC() ([]byte, error) {
+	if f.data.Len() < 10 {
+		return nil, ErrNoData
+	}
+
+	b := f.data.Bytes()
+
+	if !(b[0] == 0x1a && b[1] == 0x31) {
+		return nil, ErrNoData
+	}
+
+	return append(make([]byte, 0, 2), b[9:11]...), nil
 }
 
 // Timestamp returns the MLAT timestamp as a time.Duration.
