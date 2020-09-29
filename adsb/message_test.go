@@ -58,7 +58,7 @@ func testMsgEmptyRaw(t *testing.T) {
 }
 
 func testMsgUnsupported(t *testing.T) {
-	raw, err := hex.DecodeString("ff0000000000ff000000000000ff")
+	raw, err := hex.DecodeString("980000000000ff000000000000ff")
 	if err != nil {
 		t.Fatal("received unexpected error", err)
 	}
@@ -75,7 +75,7 @@ func testMsgUnsupported(t *testing.T) {
 		t.Fatal("received nil, expected error")
 	}
 
-	if err.Error() != "downlink format 24: format unsupported" {
+	if err.Error() != "downlink format 19: format unsupported" {
 		t.Error("received unexpected error", err)
 	}
 
@@ -373,6 +373,7 @@ func TestDecode(t *testing.T) {
 	t.Run("DF17 Identity", testDF17Ident)
 	t.Run("DF20", testDF20)
 	t.Run("DF21", testDF21)
+	t.Run("DF24", testDF24)
 }
 
 // TestDecodeErrors runs test cases for message decoding errors.
@@ -550,6 +551,30 @@ func testDF21(t *testing.T) {
 		ICAO: 0xa97db4,
 		Alt:  0,
 		Sqk:  []byte{6, 0, 1, 7},
+		Call: "",
+	}
+
+	testDecode(t, tc)
+}
+
+func testDF24(t *testing.T) {
+	tc := &testCase{
+		Msg: "c4576da66a68295e7d22ed5dd112",
+
+		DF: 24,
+		CA: -1,
+		FS: -1,
+		VS: -1,
+
+		TC:  -1,
+		SS:  -1,
+		Cat: "",
+
+		CPR: false,
+
+		ICAO: 0xab4531,
+		Alt:  0,
+		Sqk:  []byte{},
 		Call: "",
 	}
 
