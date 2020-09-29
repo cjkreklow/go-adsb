@@ -27,11 +27,3 @@ jobs:
       stage: validate
       script: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
       after_success: bash <(curl -s https://codecov.io/bash)
-    - name: "Refresh GoDoc and Go Report Card"
-      stage: refresh
-      if: branch = master AND type = push
-      language: shell
-      install: skip
-      script:
-        - curl -d "repo=kreklow.us/go/go-adsb" https://goreportcard.com/checks
-        - curl -d "path=kreklow.us/go/go-adsb" https://godoc.org/-/refresh
