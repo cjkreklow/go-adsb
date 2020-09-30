@@ -113,6 +113,7 @@ func testUnmarshalError(t *testing.T, msg string, e string) {
 func TestNoDataErrors(t *testing.T) {
 	t.Run("Marshal", testNoDataMarshal)
 	t.Run("ADSB", testNoDataADSB)
+	t.Run("ModeAC", testNoDataModeAC)
 	t.Run("Timestamp", testNoDataTimestamp)
 	t.Run("Signal", testNoDataSignal)
 }
@@ -136,6 +137,21 @@ func testNoDataADSB(t *testing.T) {
 	f := new(beast.Frame)
 
 	b, err := f.MarshalADSB()
+	if err == nil {
+		t.Error("expected error, received nil")
+	} else if !errors.Is(err, beast.ErrNoData) {
+		t.Fatal("unexpected error:", err)
+	}
+
+	if b != nil {
+		t.Errorf("expected nil, received %x", b)
+	}
+}
+
+func testNoDataModeAC(t *testing.T) {
+	f := new(beast.Frame)
+
+	b, err := f.ModeAC()
 	if err == nil {
 		t.Error("expected error, received nil")
 	} else if !errors.Is(err, beast.ErrNoData) {
@@ -181,6 +197,7 @@ func TestUnmarshal(t *testing.T) {
 	t.Run("Bytes", testUnmarshalBytes)
 	t.Run("Marshal", testUnmarshalMarshal)
 	t.Run("ADSB", testUnmarshalADSB)
+	t.Run("ModeAC", testUnmarshalModeAC)
 	t.Run("Timestamp", testUnmarshalTimestamp)
 	t.Run("Signal", testUnmarshalSignal)
 }
@@ -231,7 +248,7 @@ func testUnmarshalMarshal(t *testing.T) {
 	}
 }
 
-func testUnmarshalADSB(t *testing.T) {
+func testUnmarshalADSB(t *testing.T) { //nolint:dupl // ADSB/ModeAC tests are similar
 	msg, err := hex.DecodeString("1a321a1af933baf325c45da99adad91a1a1a1a")
 	if err != nil {
 		t.Fatal("unexpected error:", err)
@@ -256,6 +273,56 @@ func testUnmarshalADSB(t *testing.T) {
 
 	if !bytes.Equal(data, adsb) {
 		t.Errorf("expected %x, received %x", data, adsb)
+	}
+
+	ac, err := f.ModeAC()
+	if err != nil && !errors.Is(err, beast.ErrNoData) {
+		t.Fatal("unexpected error:", err)
+	} else if err == nil {
+		t.Errorf("expected %s, received nil", beast.ErrNoData)
+	}
+
+	if ac != nil {
+		t.Errorf("expected nil, received %x", ac)
+	}
+}
+
+func testUnmarshalModeAC(t *testing.T) { //nolint:dupl // ADSB/ModeAC tests are similar
+	msg, err := hex.DecodeString("1a311a1af933baf325c45047")
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	data, err := hex.DecodeString("5047")
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	f := new(beast.Frame)
+
+	err = f.UnmarshalBinary(msg)
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	ac, err := f.ModeAC()
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	if !bytes.Equal(data, ac) {
+		t.Errorf("expected %x, received %x", data, ac)
+	}
+
+	adsb, err := f.MarshalADSB()
+	if err != nil && !errors.Is(err, beast.ErrNoData) {
+		t.Fatal("unexpected error:", err)
+	} else if err == nil {
+		t.Errorf("expected %s, received nil", beast.ErrNoData)
+	}
+
+	if adsb != nil {
+		t.Errorf("expected nil, received %x", adsb)
 	}
 }
 

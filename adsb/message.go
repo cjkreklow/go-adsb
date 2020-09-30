@@ -74,7 +74,7 @@ func (m *Message) validateRaw() error {
 	}
 
 	switch df {
-	case 0, 4, 5, 11, 16, 17, 18, 20, 21:
+	case 0, 4, 5, 11, 16, 17, 18, 20, 21, 24:
 		return nil
 	default:
 		return newErrorf(ErrUnsupported, "downlink format %d", df)
