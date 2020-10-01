@@ -20,7 +20,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-//nolint:golint,goerr113 // internal test package
+// Package internal contains mock objects for testing.
 package internal
 
 import (
@@ -28,6 +28,7 @@ import (
 	"errors"
 )
 
+// MockReader implements decoderReader.
 type MockReader struct {
 	Buf *bytes.Buffer
 
@@ -42,17 +43,19 @@ type MockReader struct {
 	UnreadErr  error
 }
 
+// Buffered returns the number of bytes in Buf.
 func (r *MockReader) Buffered() int {
 	return r.Buf.Len()
 }
 
+// Discard the specified number of bytes from Buf.
 func (r *MockReader) Discard(n int) (int, error) {
 	if n > r.DiscardCount {
 		if r.DiscardErr != nil {
 			return 0, r.DiscardErr
 		}
 
-		return 0, errors.New("unexpected error in Discard")
+		return 0, errors.New("unexpected error in Discard") //nolint:err113 // no error to wrap
 	}
 
 	r.DiscardCount -= n
@@ -60,13 +63,15 @@ func (r *MockReader) Discard(n int) (int, error) {
 	return n, nil
 }
 
+// Peek returns the specified number of bytes from Buf without
+// discarding.
 func (r *MockReader) Peek(n int) ([]byte, error) {
 	if n > r.PeekCount {
 		if r.PeekErr != nil {
 			return nil, r.PeekErr
 		}
 
-		return nil, errors.New("unexpected error in Peek")
+		return nil, errors.New("unexpected error in Peek") //nolint:err113 // no error to wrap
 	}
 
 	r.PeekCount -= n
@@ -74,13 +79,14 @@ func (r *MockReader) Peek(n int) ([]byte, error) {
 	return r.Buf.Next(n), nil
 }
 
+// ReadByte returns the next available byte from Buf.
 func (r *MockReader) ReadByte() (byte, error) {
 	if r.ReadCount == 0 {
 		if r.ReadErr != nil {
 			return 0, r.ReadErr
 		}
 
-		return 0, errors.New("unexpected error in ReadByte")
+		return 0, errors.New("unexpected error in ReadByte") //nolint:err113 // no error to wrap
 	}
 
 	r.ReadCount--
@@ -88,13 +94,14 @@ func (r *MockReader) ReadByte() (byte, error) {
 	return r.Buf.ReadByte()
 }
 
+// UnreadByte places the last read byte back into Buf.
 func (r *MockReader) UnreadByte() error {
 	if r.UnreadCount == 0 {
 		if r.UnreadErr != nil {
 			return r.UnreadErr
 		}
 
-		return errors.New("unexpected error in UnreadByte")
+		return errors.New("unexpected error in UnreadByte") //nolint:err113 // no error to wrap
 	}
 
 	r.UnreadCount--
@@ -102,10 +109,12 @@ func (r *MockReader) UnreadByte() error {
 	return nil
 }
 
+// MockFrame implements BinaryUnmarshaler.
 type MockFrame struct {
 	Buf bytes.Buffer
 }
 
+// UnmarshalBinary stores data into Buf.
 func (f *MockFrame) UnmarshalBinary(data []byte) error {
 	f.Buf.Write(data)
 
