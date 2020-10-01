@@ -102,7 +102,7 @@ func (f *Frame) MarshalBinary() ([]byte, error) {
 // The returned slice remains valid until the next call to
 // UnmarshalBinary. Modifying the returned slice directly may impact
 // future Frame method calls.
-func (f Frame) Bytes() []byte {
+func (f *Frame) Bytes() []byte {
 	return f.data.Bytes()
 }
 
@@ -111,7 +111,7 @@ func (f Frame) Bytes() []byte {
 // The returned slice remains valid until the next call to
 // UnmarshalBinary. Modifying the returned slice directly may impact
 // future Frame method calls.
-func (f Frame) MarshalADSB() ([]byte, error) {
+func (f *Frame) MarshalADSB() ([]byte, error) {
 	if f.data.Len() < 10 {
 		return nil, ErrNoData
 	}
@@ -126,7 +126,7 @@ func (f Frame) MarshalADSB() ([]byte, error) {
 }
 
 // ModeAC returns the Mode AC data in the Frame.
-func (f Frame) ModeAC() ([]byte, error) {
+func (f *Frame) ModeAC() ([]byte, error) {
 	if f.data.Len() < 10 {
 		return nil, ErrNoData
 	}
@@ -141,7 +141,7 @@ func (f Frame) ModeAC() ([]byte, error) {
 }
 
 // Timestamp returns the MLAT timestamp as a time.Duration.
-func (f Frame) Timestamp() (time.Duration, error) {
+func (f *Frame) Timestamp() (time.Duration, error) {
 	if f.data.Len() < 8 {
 		return time.Duration(0), ErrNoData
 	}
@@ -154,7 +154,7 @@ func (f Frame) Timestamp() (time.Duration, error) {
 }
 
 // Signal returns the signal level.
-func (f Frame) Signal() (uint8, error) {
+func (f *Frame) Signal() (uint8, error) {
 	if f.data.Len() < 9 {
 		return 0, ErrNoData
 	}
