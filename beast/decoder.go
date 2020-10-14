@@ -109,7 +109,12 @@ func (d *Decoder) Decode(f encoding.BinaryUnmarshaler) error {
 // seekNext attempts to seek the input buffer to the next frame start
 // sequence.
 func (d *Decoder) seekNext() error {
-	b, err := d.r.Peek(d.r.Buffered())
+	ct := 100 // don't read more than 100 bytes
+	if d.r.Buffered() < ct {
+		ct = d.r.Buffered()
+	}
+
+	b, err := d.r.Peek(ct)
 	if err != nil {
 		return readError(err)
 	}
@@ -137,7 +142,7 @@ func (d *Decoder) seekNext() error {
 
 // readMsg writes frame data to the output buffer.
 func (d *Decoder) readMsg() error {
-	for {
+	for i := 0; i < 100; i++ { // don't read more than 100 bytes
 		b, err := d.r.ReadByte()
 		if err != nil {
 			return readError(err)
@@ -182,8 +187,10 @@ func (d *Decoder) readMsg() error {
 		}
 
 		// unrecognized escape code
-		return newError(nil, "data stream corrupt")
+		break
 	}
+
+	return newError(nil, "data stream corrupt")
 }
 
 // readError returns a read error.

@@ -24,15 +24,11 @@ package beast
 
 import (
 	"bytes"
-	"encoding"
 	"time"
 )
 
-var _ encoding.BinaryUnmarshaler = new(Frame)
-var _ encoding.BinaryMarshaler = new(Frame)
-
-// Frame is a Mode-S Beast format message. A Frame is safe to reuse by
-// calling UnmarshalBinary with new data.
+// Frame is a Beast format message. A Frame is safe to reuse by calling
+// UnmarshalBinary with new data.
 type Frame struct {
 	data bytes.Buffer
 }
@@ -106,12 +102,31 @@ func (f *Frame) Bytes() []byte {
 	return f.data.Bytes()
 }
 
-// MarshalADSB returns the ADS-B data in the Frame.
+// ModeAC returns the Mode AC data in a type 1 frame.
 //
 // The returned slice remains valid until the next call to
 // UnmarshalBinary. Modifying the returned slice directly may impact
 // future Frame method calls.
-func (f *Frame) MarshalADSB() ([]byte, error) {
+func (f *Frame) ModeAC() ([]byte, error) {
+	if f.data.Len() < 10 {
+		return nil, ErrNoData
+	}
+
+	b := f.data.Bytes()
+
+	if !(b[0] == 0x1a && b[1] == 0x31) {
+		return nil, ErrNoData
+	}
+
+	return b[9:], nil
+}
+
+// ModeS returns the Mode S data in a type 2 or 3 frame.
+//
+// The returned slice remains valid until the next call to
+// UnmarshalBinary. Modifying the returned slice directly may impact
+// future Frame method calls.
+func (f *Frame) ModeS() ([]byte, error) {
 	if f.data.Len() < 10 {
 		return nil, ErrNoData
 	}
@@ -125,19 +140,13 @@ func (f *Frame) MarshalADSB() ([]byte, error) {
 	return b[9:], nil
 }
 
-// ModeAC returns the Mode AC data in the Frame.
-func (f *Frame) ModeAC() ([]byte, error) {
-	if f.data.Len() < 10 {
-		return nil, ErrNoData
+// Signal returns the signal level.
+func (f *Frame) Signal() (uint8, error) {
+	if f.data.Len() < 9 {
+		return 0, ErrNoData
 	}
 
-	b := f.data.Bytes()
-
-	if !(b[0] == 0x1a && b[1] == 0x31) {
-		return nil, ErrNoData
-	}
-
-	return append(make([]byte, 0, 2), b[9:11]...), nil
+	return f.data.Bytes()[8], nil
 }
 
 // Timestamp returns the MLAT timestamp as a time.Duration.
@@ -153,11 +162,11 @@ func (f *Frame) Timestamp() (time.Duration, error) {
 	return time.Duration(ts * 1000 / 12).Round(time.Microsecond / 2), nil
 }
 
-// Signal returns the signal level.
-func (f *Frame) Signal() (uint8, error) {
-	if f.data.Len() < 9 {
+// Type returns the frame type byte.
+func (f *Frame) Type() (byte, error) {
+	if f.data.Len() < 10 {
 		return 0, ErrNoData
 	}
 
-	return f.data.Bytes()[8], nil
+	return f.data.Bytes()[1], nil
 }

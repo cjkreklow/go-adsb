@@ -112,10 +112,11 @@ func testUnmarshalError(t *testing.T, msg string, e string) {
 
 func TestNoDataErrors(t *testing.T) {
 	t.Run("Marshal", testNoDataMarshal)
-	t.Run("ADSB", testNoDataADSB)
+	t.Run("ModeS", testNoDataModeS)
 	t.Run("ModeAC", testNoDataModeAC)
 	t.Run("Timestamp", testNoDataTimestamp)
 	t.Run("Signal", testNoDataSignal)
+	t.Run("Type", testNoDataType)
 }
 
 func testNoDataMarshal(t *testing.T) {
@@ -133,10 +134,10 @@ func testNoDataMarshal(t *testing.T) {
 	}
 }
 
-func testNoDataADSB(t *testing.T) {
+func testNoDataModeS(t *testing.T) {
 	f := new(beast.Frame)
 
-	b, err := f.MarshalADSB()
+	b, err := f.ModeS()
 	if err == nil {
 		t.Error("expected error, received nil")
 	} else if !errors.Is(err, beast.ErrNoData) {
@@ -193,13 +194,29 @@ func testNoDataSignal(t *testing.T) {
 	}
 }
 
+func testNoDataType(t *testing.T) {
+	f := new(beast.Frame)
+
+	ft, err := f.Type()
+	if err == nil {
+		t.Error("expected error, received nil")
+	} else if !errors.Is(err, beast.ErrNoData) {
+		t.Fatal("unexpected error:", err)
+	}
+
+	if ft != 0 {
+		t.Errorf("expected nil, received 0x%x", ft)
+	}
+}
+
 func TestUnmarshal(t *testing.T) {
 	t.Run("Bytes", testUnmarshalBytes)
 	t.Run("Marshal", testUnmarshalMarshal)
-	t.Run("ADSB", testUnmarshalADSB)
+	t.Run("ModeS", testUnmarshalModeS)
 	t.Run("ModeAC", testUnmarshalModeAC)
 	t.Run("Timestamp", testUnmarshalTimestamp)
 	t.Run("Signal", testUnmarshalSignal)
+	t.Run("Type", testUnmarshalType)
 }
 
 func testUnmarshalBytes(t *testing.T) {
@@ -248,7 +265,7 @@ func testUnmarshalMarshal(t *testing.T) {
 	}
 }
 
-func testUnmarshalADSB(t *testing.T) { //nolint:dupl // ADSB/ModeAC tests are similar
+func testUnmarshalModeS(t *testing.T) { //nolint:dupl // ModeS/ModeAC tests are similar
 	msg, err := hex.DecodeString("1a321a1af933baf325c45da99adad91a1a1a1a")
 	if err != nil {
 		t.Fatal("unexpected error:", err)
@@ -266,7 +283,7 @@ func testUnmarshalADSB(t *testing.T) { //nolint:dupl // ADSB/ModeAC tests are si
 		t.Fatal("unexpected error:", err)
 	}
 
-	adsb, err := f.MarshalADSB()
+	adsb, err := f.ModeS()
 	if err != nil {
 		t.Fatal("unexpected error:", err)
 	}
@@ -287,7 +304,7 @@ func testUnmarshalADSB(t *testing.T) { //nolint:dupl // ADSB/ModeAC tests are si
 	}
 }
 
-func testUnmarshalModeAC(t *testing.T) { //nolint:dupl // ADSB/ModeAC tests are similar
+func testUnmarshalModeAC(t *testing.T) { //nolint:dupl // ModeS/ModeAC tests are similar
 	msg, err := hex.DecodeString("1a311a1af933baf325c45047")
 	if err != nil {
 		t.Fatal("unexpected error:", err)
@@ -314,7 +331,7 @@ func testUnmarshalModeAC(t *testing.T) { //nolint:dupl // ADSB/ModeAC tests are 
 		t.Errorf("expected %x, received %x", data, ac)
 	}
 
-	adsb, err := f.MarshalADSB()
+	adsb, err := f.ModeS()
 	if err != nil && !errors.Is(err, beast.ErrNoData) {
 		t.Fatal("unexpected error:", err)
 	} else if err == nil {
@@ -373,5 +390,36 @@ func testUnmarshalSignal(t *testing.T) {
 
 	if sig != rs {
 		t.Errorf("expected %d, received %d", sig, rs)
+	}
+}
+
+func testUnmarshalType(t *testing.T) {
+	msg, err := hex.DecodeString("1a321a1af933baf325c45da99adad95ff6")
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	var ft uint8 = 0x32
+
+	var ftr uint8 = '2'
+
+	f := new(beast.Frame)
+
+	err = f.UnmarshalBinary(msg)
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	rt, err := f.Type()
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+
+	if ft != rt {
+		t.Errorf("expected 0x%x, received 0x%x", ft, rt)
+	}
+
+	if ftr != rt {
+		t.Errorf("expected %c, received %c", ftr, rt)
 	}
 }
