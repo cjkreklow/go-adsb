@@ -28,16 +28,19 @@ import "fmt"
 
 // Public error variables.
 var (
+	errNotAvailable = newError(nil, "field not available")
+	errUnsupported  = newError(nil, "format unsupported")
+
 	// ErrNotAvailable is used to indicate that a field is not part of the
 	// specification for the message format received. Each field error wraps
 	// ErrNotAvailable, making it accessible by calling
 	// errors.Is(err, adsb.ErrNotAvailable).
-	ErrNotAvailable adsbError = newError(nil, "field not available")
+	ErrNotAvailable = errNotAvailable
 
 	// ErrUnsupported is returned when the Downlink Format of a message
 	// is not supported by Message. The error may be wrapped and should be
 	// checked with errors.Is().
-	ErrUnsupported adsbError = newError(nil, "format unsupported")
+	ErrUnsupported = errUnsupported
 )
 
 // adsbError is the error type for the adsb library.

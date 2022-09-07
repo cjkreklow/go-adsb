@@ -69,6 +69,8 @@ func testRawUnmarshalUnk12(t *testing.T) {
 }
 
 func testRawUnmarshalErr(t *testing.T, m string, e string) {
+	t.Helper()
+
 	b, err := hex.DecodeString(m)
 	if err != nil {
 		t.Fatal("received unexpected error:", err)
@@ -520,6 +522,8 @@ func testRawDF24(t *testing.T) {
 }
 
 func testRaw(t *testing.T, m string, results map[string]uint64) {
+	t.Helper()
+
 	msg, err := hex.DecodeString(m)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)
@@ -577,6 +581,8 @@ func testRaw(t *testing.T, m string, results map[string]uint64) {
 }
 
 func testRawMD(t *testing.T, m string, r []byte) {
+	t.Helper()
+
 	msg, err := hex.DecodeString(m)
 	if err != nil {
 		t.Fatalf("unexpected error %v", err)

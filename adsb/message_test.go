@@ -697,6 +697,8 @@ func testDF17Ident(t *testing.T) {
 }
 
 func testDecode(t *testing.T, tc *testCase) {
+	t.Helper()
+
 	b, err := hex.DecodeString(tc.Msg)
 	if err != nil {
 		t.Fatal("received unexpected error", err)
@@ -717,6 +719,8 @@ func testDecode(t *testing.T, tc *testCase) {
 }
 
 func testCPR(t *testing.T, tc *testCase, msg *adsb.Message) {
+	t.Helper()
+
 	cpr, err := msg.CPR()
 	if err != nil {
 		if tc.CPR != false || tc.CPR == false && !errors.Is(err, adsb.ErrNotAvailable) {
@@ -746,6 +750,8 @@ func testCPR(t *testing.T, tc *testCase, msg *adsb.Message) {
 }
 
 func testCPRLocal(t *testing.T, tc *testCase, cpr *adsb.CPR) {
+	t.Helper()
+
 	c, err := cpr.DecodeLocal(tc.RefPt)
 	if err != nil {
 		t.Error("CPR: local decode error:", err)
@@ -768,6 +774,8 @@ func testCPRLocal(t *testing.T, tc *testCase, cpr *adsb.CPR) {
 }
 
 func testCPRGlobal(t *testing.T, tc *testCase, cpr *adsb.CPR) {
+	t.Helper()
+
 	rm := new(adsb.RawMessage)
 
 	m2b, err := (hex.DecodeString(tc.Msg2))
@@ -816,6 +824,8 @@ func testCPRGlobal(t *testing.T, tc *testCase, cpr *adsb.CPR) {
 }
 
 func testICAO(t *testing.T, tc *testCase, msg *adsb.Message) {
+	t.Helper()
+
 	icao, err := msg.ICAO()
 	if err != nil {
 		t.Fatal("received unexpected error", err)
@@ -827,6 +837,8 @@ func testICAO(t *testing.T, tc *testCase, msg *adsb.Message) {
 }
 
 func testSqk(t *testing.T, tc *testCase, msg *adsb.Message) {
+	t.Helper()
+
 	sqk, err := msg.Sqk()
 	if err != nil {
 		if len(tc.Sqk) > 0 || len(tc.Sqk) == 0 && !errors.Is(err, adsb.ErrNotAvailable) {
@@ -840,6 +852,8 @@ func testSqk(t *testing.T, tc *testCase, msg *adsb.Message) {
 }
 
 func testCall(t *testing.T, tc *testCase, msg *adsb.Message) {
+	t.Helper()
+
 	call, err := msg.Call()
 	if err != nil {
 		if tc.Call != "" || tc.Call == "" && !errors.Is(err, adsb.ErrNotAvailable) {
@@ -853,6 +867,8 @@ func testCall(t *testing.T, tc *testCase, msg *adsb.Message) {
 }
 
 func testAlt(t *testing.T, tc *testCase, msg *adsb.Message) {
+	t.Helper()
+
 	a, err := msg.Alt()
 	if err != nil {
 		if tc.Alt != 0 || tc.Alt == 0 && !errors.Is(err, adsb.ErrNotAvailable) {
@@ -888,6 +904,8 @@ func testAltErrInvalid(t *testing.T) {
 }
 
 func testDecodeErr(t *testing.T, tc *testCase) {
+	t.Helper()
+
 	b, err := hex.DecodeString(tc.Msg)
 	if err != nil {
 		t.Fatal("received unexpected error", err)
@@ -906,6 +924,8 @@ func testDecodeErr(t *testing.T, tc *testCase) {
 }
 
 func testAltError(t *testing.T, tc *testCase, msg *adsb.Message) {
+	t.Helper()
+
 	a, err := msg.Alt()
 	if err == nil {
 		t.Error("expected error, received nil")

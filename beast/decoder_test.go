@@ -52,6 +52,8 @@ func testDecodeStrip(t *testing.T) {
 }
 
 func testDecoder(t *testing.T, in string, out string) {
+	t.Helper()
+
 	ib, err := hex.DecodeString(in)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
@@ -126,6 +128,8 @@ func testDecodeCorrupt(t *testing.T) {
 }
 
 func testDecoderError(t *testing.T, msg string, str string, we error) {
+	t.Helper()
+
 	b, err := hex.DecodeString(msg)
 	if err != nil {
 		t.Fatal("unexpected error:", err)
