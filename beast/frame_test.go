@@ -95,6 +95,8 @@ func testUnmarshalNoType(t *testing.T) {
 }
 
 func testUnmarshalError(t *testing.T, msg string, e string) {
+	t.Helper()
+
 	f := new(beast.Frame)
 
 	b, err := hex.DecodeString(msg)

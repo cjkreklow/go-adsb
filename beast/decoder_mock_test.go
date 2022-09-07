@@ -126,6 +126,8 @@ func testEscapeDiscardErr(t *testing.T) {
 }
 
 func testMockDecoder(t *testing.T, mr decoderReader, e error) {
+	t.Helper()
+
 	f := new(Frame)
 	d := new(Decoder)
 

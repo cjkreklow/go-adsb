@@ -64,6 +64,8 @@ func newErrorf(w error, m string, v ...interface{}) beastError { //nolint:unpara
 	}
 }
 
+var errNoData = newError(nil, "data not available")
+
 // ErrNoData is returned when the frame does not contain the data
 // necessary to return the requested information.
-var ErrNoData beastError = newError(nil, "data not available")
+var ErrNoData = errNoData

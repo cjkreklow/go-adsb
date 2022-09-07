@@ -55,7 +55,7 @@ func (r *MockReader) Discard(n int) (int, error) {
 			return 0, r.DiscardErr
 		}
 
-		return 0, errors.New("unexpected error in Discard") //nolint:err113 // no error to wrap
+		return 0, errors.New("unexpected error in Discard") //nolint:goerr113 // no error to wrap
 	}
 
 	r.DiscardCount -= n
@@ -71,7 +71,7 @@ func (r *MockReader) Peek(n int) ([]byte, error) {
 			return nil, r.PeekErr
 		}
 
-		return nil, errors.New("unexpected error in Peek") //nolint:err113 // no error to wrap
+		return nil, errors.New("unexpected error in Peek") //nolint:goerr113 // no error to wrap
 	}
 
 	r.PeekCount -= n
@@ -86,12 +86,12 @@ func (r *MockReader) ReadByte() (byte, error) {
 			return 0, r.ReadErr
 		}
 
-		return 0, errors.New("unexpected error in ReadByte") //nolint:err113 // no error to wrap
+		return 0, errors.New("unexpected error in ReadByte") //nolint:goerr113 // no error to wrap
 	}
 
 	r.ReadCount--
 
-	return r.Buf.ReadByte()
+	return r.Buf.ReadByte() //nolint:wrapcheck // unnecessary wrapping
 }
 
 // UnreadByte places the last read byte back into Buf.
@@ -101,7 +101,7 @@ func (r *MockReader) UnreadByte() error {
 			return r.UnreadErr
 		}
 
-		return errors.New("unexpected error in UnreadByte") //nolint:err113 // no error to wrap
+		return errors.New("unexpected error in UnreadByte") //nolint:goerr113 // no error to wrap
 	}
 
 	r.UnreadCount--

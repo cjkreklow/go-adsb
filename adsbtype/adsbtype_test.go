@@ -49,7 +49,7 @@ func TestConst(t *testing.T) {
 
 		adsbtype.TYPE0: "adsbtype.TYPE: No position information",
 	} {
-		var result = fmt.Sprintf("%T: %s", val, val)
+		result := fmt.Sprintf("%T: %s", val, val)
 		if result != out {
 			t.Errorf("expected %s | received %s\n", out, result)
 		}
@@ -75,7 +75,7 @@ func TestConstUnknown(t *testing.T) {
 
 		adsbtype.TYPE(99): "adsbtype.TYPE: Unknown value 99",
 	} {
-		var result = fmt.Sprintf("%T: %s", val, val)
+		result := fmt.Sprintf("%T: %s", val, val)
 		if result != out {
 			t.Errorf("expected %s | received %s\n", out, result)
 		}

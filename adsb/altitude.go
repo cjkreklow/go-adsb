@@ -23,13 +23,6 @@
 package adsb
 
 // decodeAC decodes the Altitude Code field to an altitude in feet.
-//
-// The bits are interleaved as follows:
-//
-//   CACACAMBQBDBD
-//   112244 1 2244
-// 0b0000000000000
-//
 func decodeAC(a uint64) (int64, error) {
 	if a == 0 || a&0xffffffffffffe000 != 0 {
 		return 0, newError(nil, "invalid altitude data")
