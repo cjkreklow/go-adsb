@@ -187,6 +187,10 @@ func (r *RawMessage) DF() (uint64, error) {
 	return b, nil
 }
 
+func (r *RawMessage) TC() uint64 {
+	return r.Bits(33, 37)
+}
+
 // DP returns the Data Parity field.
 func (r *RawMessage) DP() (uint64, error) {
 	df, err := r.DF()

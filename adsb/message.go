@@ -25,6 +25,7 @@ package adsb
 import (
 	"bytes"
 	"errors"
+	"math"
 )
 
 // Message provides a high-level abstraction for ADS-B messages. The
@@ -33,6 +34,8 @@ import (
 type Message struct {
 	raw *RawMessage
 }
+
+const KNOT_TO_KM = 1.852
 
 // NewMessage wraps a RawMessage and returns the new Message.
 func NewMessage(r *RawMessage) (*Message, error) {
@@ -234,4 +237,54 @@ func (m *Message) CPR() (*CPR, error) {
 	c.Lon = uint32(m.raw.Bits(72, 88))
 
 	return c, nil
+}
+
+func (m *Message) TypeCode() uint64 {
+	return m.raw.TC()
+}
+
+func (m *Message) Velocity() (float64, float64, error) {
+	tc := m.raw.TC()
+	if tc != 19 {
+		return 0.0, 0.0, newError(nil, "error retrieving velocity")
+	}
+
+	subType := m.raw.Bits(38, 40)
+
+	if subType == 1 || subType == 2 { //need speed times 4 for subtype 2?
+		ewDir := m.raw.Bits(46, 46)
+		ewVelocity := int64(m.raw.Bits(47, 56))
+		nsDir := m.raw.Bits(57, 57)
+		nsVelocity := int64(m.raw.Bits(58, 67))
+
+		velocity := math.Sqrt(float64(ewVelocity*ewVelocity+nsVelocity*nsVelocity)) * KNOT_TO_KM
+		if velocity > 0 {
+			if ewDir == 1 {
+				ewVelocity *= -1
+			}
+			if nsDir == 1 {
+				nsVelocity *= -1
+			}
+			heading := math.Atan2(float64(ewVelocity), float64(nsVelocity)) * 180 / math.Pi
+			if heading < 0 {
+				heading += 360
+			}
+			return velocity, heading, nil
+		} else {
+			return 0.0, 0.0, nil
+		}
+	} else if subType == 3 || subType == 4 { // no GPS scenario is not supported here
+		return 0.0, 0.0, newError(nil, "error retrieving velocity")
+	}
+
+	return 0.0, 0.0, newError(nil, "error retrieving velocity")
+}
+
+func (m *Message) DfType() int {
+	if df, err := m.raw.DF(); err == nil {
+		return int(df)
+	} else {
+		return -1
+	}
+
 }
