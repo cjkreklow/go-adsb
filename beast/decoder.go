@@ -1,4 +1,4 @@
-// Copyright 2020 Collin Kreklow
+// Copyright 2024 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -33,8 +33,8 @@ import (
 // decoderReader allows mocking the bufio.Reader in Decoder.
 type decoderReader interface {
 	Buffered() int
-	Discard(int) (int, error)
-	Peek(int) ([]byte, error)
+	Discard(n int) (int, error)
+	Peek(n int) ([]byte, error)
 	ReadByte() (byte, error)
 	UnreadByte() error
 }
