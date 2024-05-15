@@ -1,4 +1,4 @@
-// Copyright 2020 Collin Kreklow
+// Copyright 2024 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -758,15 +758,20 @@ func testCPRLocal(t *testing.T, tc *testCase, cpr *adsb.CPR) {
 	} else {
 		eLat := big.NewFloat(tc.Lat)
 		eLat.SetPrec(16)
+
 		cLat := big.NewFloat(c[0])
 		cLat.SetPrec(16)
+
 		if eLat.Cmp(cLat) != 0 {
 			t.Errorf("Lat: received %s, expected %s", cLat.String(), eLat.String())
 		}
+
 		eLon := big.NewFloat(tc.Lon)
 		eLon.SetPrec(16)
+
 		cLon := big.NewFloat(c[1])
 		cLon.SetPrec(16)
+
 		if eLon.Cmp(cLon) != 0 {
 			t.Errorf("Lon: received %s, expected %s", cLon.String(), eLon.String())
 		}
@@ -808,15 +813,20 @@ func testCPRGlobal(t *testing.T, tc *testCase, cpr *adsb.CPR) {
 	} else {
 		eLat := big.NewFloat(tc.Lat)
 		eLat.SetPrec(16)
+
 		cLat := big.NewFloat(c[0])
 		cLat.SetPrec(16)
+
 		if eLat.Cmp(cLat) != 0 {
 			t.Errorf("Lat: received %s, expected %s", cLat.String(), eLat.String())
 		}
+
 		eLon := big.NewFloat(tc.Lon)
 		eLon.SetPrec(16)
+
 		cLon := big.NewFloat(c[1])
 		cLon.SetPrec(16)
+
 		if eLon.Cmp(cLon) != 0 {
 			t.Errorf("Lon: received %s, expected %s", cLon.String(), eLon.String())
 		}

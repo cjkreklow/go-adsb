@@ -1,4 +1,4 @@
-// Copyright 2020 Collin Kreklow
+// Copyright 2024 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -569,10 +569,12 @@ func testRaw(t *testing.T, m string, results map[string]uint64) {
 				if err.Error() != expErr {
 					t.Errorf("%s  expected: '%s'  received: '%v'", n, expErr, err)
 				}
+
 				if !errors.Is(err, adsb.ErrNotAvailable) {
 					t.Errorf("%s  unexpected error type, not ErrNotAvailable", n)
 				}
 			}
+
 			if b != 0 {
 				t.Errorf("%s  expected: 0  received: %x", n, b)
 			}
@@ -612,8 +614,8 @@ func testRawMD(t *testing.T, m string, r []byte) {
 			t.Errorf("%s  unexpected error: %v", n, err)
 		}
 
-		expErr := fmt.Sprintf(
-			"error retrieving %s from %d: field not available", n, df)
+		expErr := fmt.Sprintf("error retrieving %s from %d: field not available", n, df)
+
 		b, err := rm.MD()
 		if err == nil {
 			t.Errorf("%s  expected: error  received: %v", n, err)

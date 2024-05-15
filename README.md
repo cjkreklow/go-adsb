@@ -1,8 +1,8 @@
 # Overview
 [![PkgGoDev](https://pkg.go.dev/badge/kreklow.us/go/go-adsb)](https://pkg.go.dev/kreklow.us/go/go-adsb)
-![GitHub](https://img.shields.io/github/license/cjkreklow/go-adsb.svg)
-![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/cjkreklow/go-adsb.svg)
-[![Build Status](https://www.travis-ci.org/cjkreklow/go-adsb.svg?branch=main)](https://www.travis-ci.org/cjkreklow/go-adsb)
+![License](https://img.shields.io/github/license/cjkreklow/go-adsb)
+![Version](https://img.shields.io/github/v/tag/cjkreklow/go-adsb)
+![Status](https://github.com/cjkreklow/go-adsb/actions/workflows/push.yml/badge.svg?branch=main)
 [![codecov](https://codecov.io/gh/cjkreklow/go-adsb/branch/main/graph/badge.svg)](https://codecov.io/gh/cjkreklow/go-adsb)
 
 `go-adsb` is a Go module that includes packages for working with ADS-B and
