@@ -59,6 +59,17 @@ func NewDecoder(r io.Reader) *Decoder {
 	return d
 }
 
+// Reset resets the Decoder to read from r, allowing reuse of the Decoder
+// and its internal bufio.Reader buffer to reduce allocations.
+func (d *Decoder) Reset(r io.Reader) {
+	if br, ok := d.r.(*bufio.Reader); ok {
+		br.Reset(r)
+	} else {
+		d.r = bufio.NewReader(r)
+	}
+	d.buf.Reset()
+}
+
 // Decode reads the next Beast frame from the input source and stores it
 // in f. The data passed to f remains valid only until the next call to
 // Decode().
