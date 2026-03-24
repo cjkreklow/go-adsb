@@ -150,8 +150,8 @@ func (m *Message) Call() (string, error) {
 
 	call := make([]byte, 8)
 
-	var i uint
-	for i = range 8 {
+	var r uint = 8
+	for i := range r {
 		call[i] = callChars[(bits>>(42-(i*6)))&0x3F]
 	}
 
