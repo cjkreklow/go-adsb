@@ -1,4 +1,4 @@
-// Copyright 2024 Collin Kreklow
+// Copyright 2026 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -179,10 +179,7 @@ func (r *RawMessage) DF() (uint64, error) {
 		return 0, newError(nil, "no data loaded")
 	}
 
-	b := r.Bits(1, 5)
-	if b > 24 {
-		b = 24
-	}
+	b := min(r.Bits(1, 5), 24)
 
 	return b, nil
 }

@@ -1,4 +1,4 @@
-// Copyright 2024 Collin Kreklow
+// Copyright 2026 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -69,8 +69,8 @@ func (d *Decoder) Decode(f encoding.BinaryUnmarshaler) error {
 		return readError(err)
 	}
 
-	if !(t[0] == 0x1a &&
-		(t[1] == 0x31 || t[1] == 0x32 || t[1] == 0x33 || t[1] == 0x34)) {
+	if t[0] != 0x1a ||
+		(t[1] != 0x31 && t[1] != 0x32 && t[1] != 0x33 && t[1] != 0x34) {
 		err = d.seekNext()
 		if err != nil {
 			return err
@@ -109,10 +109,7 @@ func (d *Decoder) Decode(f encoding.BinaryUnmarshaler) error {
 // seekNext attempts to seek the input buffer to the next frame start
 // sequence.
 func (d *Decoder) seekNext() error {
-	ct := 100 // don't read more than 100 bytes
-	if d.r.Buffered() < ct {
-		ct = d.r.Buffered()
-	}
+	ct := min(d.r.Buffered(), 100) // don't read more than 100 bytes
 
 	b, err := d.r.Peek(ct)
 	if err != nil {
@@ -142,7 +139,7 @@ func (d *Decoder) seekNext() error {
 
 // readMsg writes frame data to the output buffer.
 func (d *Decoder) readMsg() error {
-	for i := 0; i < 100; i++ { // don't read more than 100 bytes
+	for range 100 { // don't read more than 100 bytes
 		b, err := d.r.ReadByte()
 		if err != nil {
 			return readError(err)

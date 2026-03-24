@@ -1,4 +1,4 @@
-// Copyright 2024 Collin Kreklow
+// Copyright 2026 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -52,7 +52,7 @@ func testMsgEmptyRaw(t *testing.T) {
 		t.Fatal("received nil, expected error")
 	}
 
-	if err.Error() != "no data loaded" { //nolint:goconst // test output
+	if err.Error() != "no data loaded" {
 		t.Error("received unexpected error", err)
 	}
 }

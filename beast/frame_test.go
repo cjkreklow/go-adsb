@@ -1,4 +1,4 @@
-// Copyright 2024 Collin Kreklow
+// Copyright 2026 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -39,7 +39,7 @@ func TestInterfaces(t *testing.T) {
 }
 
 func testBinaryUnmarshaler(t *testing.T) {
-	var f interface{} = new(beast.Frame)
+	var f any = new(beast.Frame)
 
 	_, ok := f.(encoding.BinaryUnmarshaler)
 	if !ok {
@@ -48,7 +48,7 @@ func testBinaryUnmarshaler(t *testing.T) {
 }
 
 func testBinaryMarshaler(t *testing.T) {
-	var f interface{} = new(beast.Frame)
+	var f any = new(beast.Frame)
 
 	_, ok := f.(encoding.BinaryMarshaler)
 	if !ok {
