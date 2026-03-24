@@ -21,3 +21,5 @@ coverage:
       default:
         target: auto
         threshold: 10%
+ignore:
+  - beast/internal
