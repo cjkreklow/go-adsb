@@ -1,4 +1,4 @@
-// Copyright 2024 Collin Kreklow
+// Copyright 2026 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -57,7 +57,7 @@ func newError(w error, m string) beastError {
 }
 
 // newErrorf returns a new beastError with a Printf-style message.
-func newErrorf(w error, m string, v ...interface{}) beastError { //nolint:unparam // consistent with newError
+func newErrorf(w error, m string, v ...any) beastError { //nolint:unparam // consistent with newError
 	return beastError{
 		msg:  fmt.Sprintf(m, v...),
 		werr: w,

@@ -1,4 +1,4 @@
-// Copyright 2024 Collin Kreklow
+// Copyright 2026 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -25,6 +25,8 @@ package adsb
 import (
 	"bytes"
 	"errors"
+
+	"github.com/ccoveille/go-safecast/v2"
 )
 
 // Message provides a high-level abstraction for ADS-B messages. The
@@ -64,21 +66,6 @@ func (m *Message) UnmarshalBinary(data []byte) error {
 	}
 
 	return m.validateRaw()
-}
-
-// Validate that the downlink format is an expected value.
-func (m *Message) validateRaw() error {
-	df, err := m.raw.DF()
-	if err != nil {
-		return err
-	}
-
-	switch df {
-	case 0, 4, 5, 11, 16, 17, 18, 20, 21, 24:
-		return nil
-	default:
-		return newErrorf(ErrUnsupported, "downlink format %d", df)
-	}
 }
 
 // Raw returns the underlying RawMessage. The content of the RawMessage
@@ -163,8 +150,8 @@ func (m *Message) Call() (string, error) {
 
 	call := make([]byte, 8)
 
-	var i uint
-	for i = 0; i < 8; i++ {
+	var r uint = 8
+	for i := range r {
 		call[i] = callChars[(bits>>(42-(i*6)))&0x3F]
 	}
 
@@ -230,8 +217,23 @@ func (m *Message) CPR() (*CPR, error) {
 	c.Nb = 17
 	c.T = m.raw.Bit(53)
 	c.F = m.raw.Bit(54)
-	c.Lat = uint32(m.raw.Bits(55, 71))
-	c.Lon = uint32(m.raw.Bits(72, 88))
+	c.Lat = safecast.MustConvert[uint32](m.raw.Bits(55, 71))
+	c.Lon = safecast.MustConvert[uint32](m.raw.Bits(72, 88))
 
 	return c, nil
+}
+
+// Validate that the downlink format is an expected value.
+func (m *Message) validateRaw() error {
+	df, err := m.raw.DF()
+	if err != nil {
+		return err
+	}
+
+	switch df {
+	case 0, 4, 5, 11, 16, 17, 18, 20, 21, 24:
+		return nil
+	default:
+		return newErrorf(ErrUnsupported, "downlink format %d", df)
+	}
 }

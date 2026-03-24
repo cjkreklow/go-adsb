@@ -1,4 +1,4 @@
-// Copyright 2024 Collin Kreklow
+// Copyright 2026 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -41,8 +41,8 @@ func (f *Frame) UnmarshalBinary(data []byte) error {
 		return newError(nil, "received truncated data")
 	}
 
-	if !(data[0] == 0x1a &&
-		(data[1] == 0x31 || data[1] == 0x32 || data[1] == 0x33 || data[1] == 0x34)) {
+	if data[0] != 0x1a ||
+		(data[1] != 0x31 && data[1] != 0x32 && data[1] != 0x33 && data[1] != 0x34) {
 		return newErrorf(nil, "invalid data format: %04x", data[0:2])
 	}
 
@@ -114,7 +114,7 @@ func (f *Frame) ModeAC() ([]byte, error) {
 
 	b := f.data.Bytes()
 
-	if !(b[0] == 0x1a && b[1] == 0x31) {
+	if b[0] != 0x1a || b[1] != 0x31 {
 		return nil, ErrNoData
 	}
 
@@ -133,7 +133,7 @@ func (f *Frame) ModeS() ([]byte, error) {
 
 	b := f.data.Bytes()
 
-	if !(b[0] == 0x1a && (b[1] == 0x32 || b[1] == 0x33)) {
+	if b[0] != 0x1a || (b[1] != 0x32 && b[1] != 0x33) {
 		return nil, ErrNoData
 	}
 

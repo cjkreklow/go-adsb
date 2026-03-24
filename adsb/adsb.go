@@ -1,4 +1,4 @@
-// Copyright 2024 Collin Kreklow
+// Copyright 2026 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -72,7 +72,7 @@ func newError(w error, m string) adsbError {
 }
 
 // newErrorf returns a new adsbError with a Printf-style message.
-func newErrorf(w error, m string, v ...interface{}) adsbError {
+func newErrorf(w error, m string, v ...any) adsbError {
 	return adsbError{
 		msg:  fmt.Sprintf(m, v...),
 		werr: w,

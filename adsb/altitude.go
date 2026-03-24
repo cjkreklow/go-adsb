@@ -1,4 +1,4 @@
-// Copyright 2024 Collin Kreklow
+// Copyright 2026 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -21,6 +21,8 @@
 // SOFTWARE.
 
 package adsb
+
+import "github.com/ccoveille/go-safecast/v2"
 
 // decodeAC decodes the Altitude Code field to an altitude in feet.
 func decodeAC(a uint64) (int64, error) {
@@ -62,7 +64,7 @@ func decodeAC(a uint64) (int64, error) {
 			h = 6 - h
 		}
 
-		return int64((f*500)+(h*100)) - 1300, nil
+		return safecast.MustConvert[int64]((f*500)+(h*100)) - 1300, nil
 	}
 
 	// must be an 11 bit altitude
@@ -70,7 +72,7 @@ func decodeAC(a uint64) (int64, error) {
 		((a & 0b0000000100000) >> 1) |
 		(a & 0b0000000001111)
 
-	return int64(a*25) - 1000, nil
+	return safecast.MustConvert[int64](a*25) - 1000, nil
 }
 
 // decodeESAlt decodes the extended squitter Altitude field to an

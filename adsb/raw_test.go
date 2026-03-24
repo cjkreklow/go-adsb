@@ -1,4 +1,4 @@
-// Copyright 2024 Collin Kreklow
+// Copyright 2026 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -34,7 +34,7 @@ import (
 )
 
 func TestRawUnmarshalInterface(t *testing.T) {
-	var i interface{} = new(adsb.RawMessage)
+	var i any = new(adsb.RawMessage)
 	if _, ok := i.(encoding.BinaryUnmarshaler); !ok {
 		t.Fatal("RawMessage does not implement encoding.BinaryUnmarshaler")
 	}
@@ -552,7 +552,7 @@ func testRaw(t *testing.T, m string, results map[string]uint64) {
 			"error retrieving %s from %d: field not available",
 			n, results["DF"])
 
-		if r, ok := results[n]; ok { //nolint:nestif // recursive testing function
+		if r, ok := results[n]; ok {
 			b, err := f()
 			if err != nil {
 				t.Errorf("%s  unexpected error: %v", n, err)
@@ -599,7 +599,7 @@ func testRawMD(t *testing.T, m string, r []byte) {
 
 	n := "MD"
 
-	if r != nil { //nolint:nestif // test chain
+	if r != nil {
 		b, err := rm.MD()
 		if err != nil {
 			t.Errorf("%s  unexpected error: %v", n, err)

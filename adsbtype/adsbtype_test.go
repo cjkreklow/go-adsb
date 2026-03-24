@@ -1,4 +1,4 @@
-// Copyright 2024 Collin Kreklow
+// Copyright 2026 Collin Kreklow
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -31,7 +31,7 @@ import (
 
 // TestConst tests string formatting of constant values.
 func TestConst(t *testing.T) {
-	for val, out := range map[interface{}]string{
+	for val, out := range map[any]string{
 		adsbtype.CA0: "adsbtype.CA: Level 1",
 		adsbtype.CC0: "adsbtype.CC: Not supported",
 		adsbtype.CF0: "adsbtype.CF: ADS-B message, non-transponder device with ICAO address",
@@ -57,7 +57,7 @@ func TestConst(t *testing.T) {
 }
 
 func TestConstUnknown(t *testing.T) {
-	for val, out := range map[interface{}]string{
+	for val, out := range map[any]string{
 		adsbtype.CA(99): "adsbtype.CA: Unknown value 99",
 		adsbtype.CC(99): "adsbtype.CC: Unknown value 99",
 		adsbtype.CF(99): "adsbtype.CF: Unknown value 99",
